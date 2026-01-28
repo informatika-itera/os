@@ -1,0 +1,384 @@
+\chapter{Pengenalan Sistem Operasi}
+\vspace{1cm}
+
+Jika Anda mengambil mata kuliah sistem operasi tingkat sarjana, Anda seharusnya sudah memiliki gambaran tentang apa yang dilakukan program komputer saat dijalankan. Jika tidak, buku ini (dan mata kuliah yang bersangkutan) akan menjadi sulit — jadi sebaiknya Anda berhenti membaca buku ini, atau lari ke toko buku terdekat dan segera pelajari materi latar belakang yang diperlukan sebelum melanjutkan (buku karya Patt \& Patel [PP03] dan Bryant \& O'Hallaron [BOH10] adalah buku-buku yang cukup bagus).
+
+Jadi apa yang terjadi ketika sebuah program berjalan?
+
+Yah, program yang berjalan melakukan satu hal yang sangat sederhana: ia mengeksekusi instruksi. Juta-an (dan hari ini, bahkan miliaran) kali setiap detik, prosesor \textbf{mengambil} (\textit{fetches}) instruksi dari memori, \textbf{mendekode} (\textit{decodes}) instruksi tersebut (yaitu, mencari tahu instruksi apa ini), dan \textbf{mengeksekusi}-nya (\textit{executes}) (yaitu, melakukan hal yang seharusnya dilakukan, seperti menjumlahkan dua angka, mengakses memori, memeriksa kondisi, melompat ke fungsi, dan sebagainya). Setelah selesai dengan instruksi ini, prosesor beralih ke instruksi berikutnya, dan seterusnya, dan seterusnya, sampai program akhirnya selesai\footnote{Tentu saja, prosesor modern melakukan banyak hal aneh dan menakutkan di balik layar untuk membuat program berjalan lebih cepat, mis., mengeksekusi beberapa instruksi sekaligus, dan bahkan mengeluarkan dan menyelesaikannya secara tidak berurutan! Tetapi itu bukan urusan kita di sini; kita hanya peduli dengan model sederhana yang diasumsikan oleh sebagian besar program: bahwa instruksi tampaknya dieksekusi satu per satu, secara teratur dan berurutan.}.
+
+Jadi, kita baru saja menjelaskan dasar-dasar model komputasi \textbf{Von Neumann}\footnote{Von Neumann adalah salah satu pelopor awal sistem komputasi. Dia juga melakukan pekerjaan perintis pada teori permainan (\textit{game theory}) dan bom atom, dan bermain di NBA selama enam tahun. OKE, salah satu dari hal itu tidak benar.}. Terdengar sederhana, bukan? Tetapi di kelas ini, kita akan belajar bahwa saat program berjalan, banyak hal liar lainnya terjadi dengan tujuan utama membuat sistem \textbf{mudah digunakan} (\textit{easy to use}).
+
+Ada sekumpulan perangkat lunak, sebenarnya, yang bertanggung jawab untuk membuatnya mudah menjalankan program (bahkan memungkinkan Anda untuk seolah-olah menjalankan banyak program secara bersamaan), memungkinkan program untuk berbagi memori, memungkinkan program untuk berinteraksi dengan perangkat, dan hal-hal menyenangkan lainnya seperti itu. Kumpulan perangkat lunak itu disebut \textbf{sistem operasi} (\textbf{OS})\footnote{Nama awal lain untuk OS adalah \textbf{supervisor} atau bahkan \textbf{master control program}. Rupanya, nama yang terakhir terdengar agak terlalu bersemangat (lihat film Tron untuk detailnya) dan untungnya, ``sistem operasi'' yang lebih populer.}, karena ia bertugas memastikan sistem beroperasi dengan benar dan efisien dalam cara yang mudah digunakan.
+
+\begin{asidebox}{INTI MASALAH: \\ BAGAIMANA MEMVIRTUALISASI SUMBER DAYA}
+Satu pertanyaan sentral yang akan kita jawab dalam buku ini cukup sederhana: bagaimana sistem operasi memvirtualisasi sumber daya? Ini adalah inti masalah kita. \textit{Mengapa} OS melakukan ini bukanlah pertanyaan utama, karena jawabannya seharusnya jelas: itu membuat sistem lebih mudah digunakan. Jadi, kita fokus pada \textit{bagaimana}: mekanisme dan kebijakan apa yang diimplementasikan oleh OS untuk mencapai virtualisasi? Bagaimana OS melakukannya dengan efisien? Dukungan perangkat keras apa yang diperlukan?
+
+Kami akan menggunakan ``inti masalah'' (\textit{crux of the problem}), dalam kotak berbayang seperti ini, sebagai cara untuk menyebutkan masalah spesifik yang kami coba selesaikan dalam membangun sistem operasi. Jadi, dalam catatan tentang topik tertentu, Anda mungkin menemukan satu atau lebih inti masalah (ya, ini bentuk jamak yang tepat) yang menyoroti masalahnya. Detail dalam bab ini, tentu saja, menyajikan solusinya, atau setidaknya parameter dasar dari sebuah solusi.
+\end{asidebox}
+
+Cara utama OS melakukan ini adalah melalui teknik umum yang kita sebut \textbf{virtualisasi}. Yaitu, OS mengambil \textbf{sumber daya fisik} (seperti prosesor, atau memori, atau disk) dan mengubahnya menjadi bentuk \textbf{virtual} yang lebih umum, kuat, dan mudah digunakan dari dirinya sendiri. Jadi, kita kadang-kadang menyebut sistem operasi sebagai \textbf{mesin virtual}.
+
+Tentu saja, agar pengguna dapat memberi tahu OS apa yang harus dilakukan dan dengan demikian memanfaatkan fitur-fitur mesin virtual (seperti menjalankan program, atau mengalokasikan memori, atau mengakses file), OS juga menyediakan beberapa antarmuka (API) yang dapat Anda panggil. Sebuah OS tipikal, pada kenyataannya, mengekspor beberapa ratus \textbf{system call} yang tersedia untuk aplikasi. Karena OS menyediakan panggilan-panggilan ini untuk menjalankan program, mengakses memori dan perangkat, dan tindakan terkait lainnya, kita juga kadang-kadang mengatakan bahwa OS menyediakan \textbf{pustaka standar} (\textit{standard library}) untuk aplikasi.
+
+Akhirnya, karena virtualisasi memungkinkan banyak program berjalan (sehingga berbagi CPU), dan banyak program untuk secara bersamaan mengakses instruksi dan data mereka sendiri (sehingga berbagi memori), dan banyak program untuk mengakses perangkat (sehingga berbagi disk dan sebagainya), OS kadang-kadang dikenal sebagai \textbf{manajer sumber daya}. Setiap CPU, memori, dan disk adalah \textbf{sumber daya} sistem; adalah peran sistem operasi untuk \textbf{mengelola} sumber daya tersebut, melakukannya secara efisien atau adil atau memang dengan banyak tujuan lain yang mungkin ada dalam pikiran. Untuk memahami peran OS sedikit lebih baik, mari kita lihat beberapa contoh.
+
+\section{Virtualisasi CPU}
+Gambar 2.1 menggambarkan program pertama kita. Tidak banyak yang dilakukannya. Faktanya, yang dilakukannya hanyalah memanggil \texttt{Spin()}, sebuah fungsi yang berulang kali memeriksa waktu dan kembali setelah berjalan selama satu detik. Kemudian, ia mencetak string yang diberikan pengguna pada baris perintah, dan mengulanginya, selamanya.
+
+\begin{lstlisting}[language=C, caption={Contoh Sederhana: Kode yang Mengulang dan Mencetak (cpu.c)}, label={lst:cpu}]
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <assert.h>
+#include "common.h"
+
+int
+main(int argc, char *argv[])
+{
+    if (argc != 2) {
+        fprintf(stderr, "usage: cpu <string>\n");
+        exit(1);
+    }
+    char *str = argv[1];
+    while (1) {
+        Spin(1);
+        printf("%s\n", str);
+    }
+    return 0;
+}
+\end{lstlisting}
+
+Mari kita katakan kita menyimpan file ini sebagai \texttt{cpu.c} dan memutuskan untuk mengkompilasi dan menjalankannya pada sistem dengan satu prosesor (atau \textbf{CPU} sebagaimana kadang-kadang akan kita sebut). Inilah yang akan kita lihat:
+
+\begin{verbatim}
+prompt> gcc -o cpu cpu.c -Wall
+prompt> ./cpu "A"
+A
+A
+A
+A
+^C
+prompt>
+\end{verbatim}
+
+Bukan sebuah proses yang terlalu menarik — sistem mulai menjalankan program, yang berulang kali memeriksa waktu hingga satu detik berlalu. Setelah satu detik berlalu, kode mencetak string input yang diberikan oleh pengguna (dalam contoh ini, huruf ``A''), dan berlanjut. Perhatikan program akan berjalan selamanya; dengan menekan ``Control-c'' (yang pada sistem berbasis UNIX akan menghentikan program yang berjalan di latar depan), kita dapat menghentikan program.
+
+Sekarang, mari kita lakukan hal yang sama, tetapi kali ini, mari kita jalankan banyak contoh berbeda dari program yang sama ini. Gambar 2.2 menunjukkan hasil dari contoh yang sedikit lebih rumit ini.
+
+\begin{figure}[h]
+\centering
+\begin{verbatim}
+prompt> ./cpu A & ./cpu B & ./cpu C & ./cpu D &
+[1] 7353
+[2] 7354
+[3] 7355
+[4] 7356
+A
+B
+D
+C
+A
+B
+D
+C
+A
+...
+\end{verbatim}
+\caption{Menjalankan Banyak Program Sekaligus}
+\label{fig:manyprograms}
+\end{figure}
+
+Yah, sekarang segalanya menjadi sedikit lebih menarik. Meskipun kita hanya memiliki satu prosesor, entah bagaimana keempat program ini tampaknya berjalan pada waktu yang sama! Bagaimana keajaiban ini terjadi?\footnote{Perhatikan bagaimana kita menjalankan empat proses pada waktu yang sama, dengan menggunakan simbol \texttt{\&}. Melakukan hal itu menjalankan pekerjaan di latar belakang (\textit{background}) dalam shell \texttt{zsh}, yang berarti pengguna dapat segera mengeluarkan perintah berikutnya, yang dalam kasus ini adalah program lain untuk dijalankan. Jika Anda menggunakan shell yang berbeda (mis., \texttt{tcsh}), cara kerjanya sedikit berbeda; baca dokumentasi online untuk detailnya.}
+
+Ternyata sistem operasi, dengan sedikit bantuan dari perangkat keras, bertanggung jawab atas \textbf{ilusi} ini, yaitu, ilusi bahwa sistem memiliki sejumlah besar CPU virtual. Mengubah satu CPU (atau sekumpulan kecil CPU) menjadi sejumlah CPU yang tampaknya tak terbatas dan dengan demikian memungkinkan banyak program untuk tampaknya berjalan sekaligus adalah apa yang kita sebut \textbf{memvirtualisasi CPU}, fokus dari bagian utama pertama buku ini.
+
+Tentu saja, untuk menjalankan program, dan menghentikannya, dan sebaliknya memberi tahu OS program mana yang akan dijalankan, perlu ada beberapa antarmuka (API) yang dapat Anda gunakan untuk mengomunikasikan keinginan Anda kepada OS. Kita akan berbicara tentang API ini di seluruh buku ini; memang, mereka adalah cara utama sebagian besar pengguna berinteraksi dengan sistem operasi.
+
+Anda mungkin juga memperhatikan bahwa kemampuan untuk menjalankan beberapa program sekaligus memunculkan segala macam pertanyaan baru. Misalnya, jika dua program ingin berjalan pada waktu tertentu, mana yang harus berjalan? Pertanyaan ini dijawab oleh \textbf{kebijakan} (\textit{policy}) OS; kebijakan digunakan di banyak tempat berbeda dalam OS untuk menjawab jenis pertanyaan ini, dan dengan demikian kita akan mempelajarinya saat kita mempelajari tentang \textbf{mekanisme} dasar yang diimplementasikan sistem operasi (seperti kemampuan untuk menjalankan beberapa program sekaligus). Karenanya peran OS sebagai \textbf{manajer sumber daya}.
+
+\section{Virtualisasi Memori}
+Sekarang mari kita pertimbangkan memori. Model \textbf{memori fisik} yang disajikan oleh mesin modern sangat sederhana. Memori hanyalah sebuah array byte; untuk \textbf{membaca} memori, seseorang harus menentukan \textbf{alamat} agar dapat mengakses data yang disimpan di sana; untuk \textbf{menulis} (atau \textbf{memperbarui}) memori, seseorang juga harus menentukan data yang akan ditulis ke alamat yang diberikan.
+
+Memori diakses sepanjang waktu saat program berjalan. Sebuah program menyimpan semua struktur datanya di memori, dan mengaksesnya melalui berbagai instruksi, seperti \textit{loads} dan \textit{stores} atau instruksi eksplisit lainnya yang mengakses memori dalam melakukan pekerjaan mereka. Jangan lupa bahwa setiap instruksi program ada di memori juga; jadi memori diakses pada setiap pengambilan instruksi (\textit{instruction fetch}).
+
+Mari kita lihat sebuah program (pada Gambar 2.3) yang mengalokasikan beberapa memori dengan memanggil \texttt{malloc()}. Output dari program ini dapat ditemukan di sini:
+
+\begin{lstlisting}[language=C, caption={Program yang Mengakses Memori (mem.c)}, label={lst:mem}]
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "common.h"
+
+int
+main(int argc, char *argv[])
+{
+    int *p = malloc(sizeof(int)); // a1
+    assert(p != NULL);
+    printf("(%d) address pointed to by p: %p\n",
+           getpid(), p); // a2
+    *p = 0; // a3
+    while (1) {
+        Spin(1);
+        *p = *p + 1;
+        printf("(%d) p: %d\n", getpid(), *p); // a4
+    }
+    return 0;
+}
+\end{lstlisting}
+
+\begin{verbatim}
+prompt> ./mem
+(2134) address pointed to by p: 0x200000
+(2134) p: 1
+(2134) p: 2
+(2134) p: 3
+(2134) p: 4
+(2134) p: 5
+^C
+\end{verbatim}
+
+Program ini melakukan beberapa hal. Pertama, ia mengalokasikan beberapa memori (baris a1). Kemudian, ia mencetak alamat memori (a2), dan kemudian menempatkan angka nol ke dalam slot pertama dari memori yang baru dialokasikan (a3). Akhirnya, ia melakukan loop, menunda selama satu detik dan menaikkan nilai yang disimpan di alamat yang dipegang dalam \texttt{p}. Dengan setiap pernyataan cetak, ia juga mencetak apa yang disebut pengidentifikasi proses (\textit{Process Identifier} atau PID) dari program yang sedang berjalan. PID ini unik per proses yang berjalan.
+
+Sekali lagi, hasil pertama ini tidak terlalu menarik. Memori yang baru dialokasikan berada di alamat \texttt{0x200000}. Saat program berjalan, perlahan-lahan ia memperbarui nilai dan mencetak hasilnya.
+
+Sekarang, kita menjalankan lagi beberapa contoh dari program yang sama ini untuk melihat apa yang terjadi (Gambar 2.4).
+
+\begin{figure}[h]
+\centering
+\begin{verbatim}
+prompt> ./mem & ./mem &
+[1] 24113
+[2] 24114
+(24113) address pointed to by p: 0x200000
+(24114) address pointed to by p: 0x200000
+(24113) p: 1
+(24114) p: 1
+(24114) p: 2
+(24113) p: 2
+(24113) p: 3
+(24114) p: 3
+(24113) p: 4
+(24114) p: 4
+...
+\end{verbatim}
+\caption{Menjalankan Program Memori Beberapa Kali}
+\label{fig:manymem}
+\end{figure}
+
+Kita melihat dari contoh bahwa setiap program yang berjalan telah mengalokasikan memori pada alamat yang sama (\texttt{0x200000}), namun masing-masing tampaknya memperbarui nilai pada \texttt{0x200000} secara independen! Seolah-olah setiap program yang berjalan memiliki memori pribadinya sendiri, alih-alih berbagi memori fisik yang sama dengan program yang berjalan lainnya\footnote{Agar contoh ini berfungsi, Anda perlu memastikan pengacakan ruang alamat (\textit{address-space randomization}) dinonaktifkan; pengacakan, ternyata, bisa menjadi pertahanan yang baik terhadap jenis cacat keamanan tertentu. Baca lebih lanjut tentang itu sendiri, terutama jika Anda ingin belajar cara membobol sistem komputer melalui serangan \textit{stack-smashing}. Bukan berarti kami merekomendasikan hal seperti itu...}.
+
+Memang, itulah tepatnya yang terjadi di sini karena OS sedang \textbf{memvirtualisasi memori}. Setiap proses mengakses \textbf{ruang alamat virtual} pribadinya sendiri (kadang-kadang hanya disebut \textbf{ruang alamat}), yang entah bagaimana dipetakan oleh OS ke memori fisik mesin. Referensi memori dalam satu program yang berjalan tidak mempengaruhi ruang alamat proses lain (atau OS itu sendiri); sejauh menyangkut program yang sedang berjalan, ia memiliki memori fisik untuk dirinya sendiri. Kenyataannya, bagaimanapun, adalah bahwa memori fisik adalah sumber daya bersama, dikelola oleh sistem operasi. Tepatnya bagaimana semua ini diselesaikan juga merupakan subjek dari bagian pertama buku ini, tentang topik \textbf{virtualisasi}.
+
+\section{Konkurensi}
+Tema utama lain dari buku ini adalah \textbf{konkurensi}. Kami menggunakan istilah konseptual ini untuk merujuk pada sejumlah masalah yang muncul, dan harus ditangani, ketika mengerjakan banyak hal sekaligus (yani, secara konkuren) dalam program yang sama. Masalah konkurensi muncul pertama kali di dalam sistem operasi itu sendiri; seperti yang dapat Anda lihat dalam contoh-contoh di atas tentang virtualisasi, OS menyulap banyak hal sekaligus, pertama menjalankan satu proses, lalu yang lain, dan seterusnya. Ternyata, melakukan hal itu mengarah pada beberapa masalah yang mendalam dan menarik.
+
+Sayangnya, masalah konkurensi tidak lagi terbatas hanya pada OS itu sendiri. Memang, program \textbf{multi-threaded} modern menunjukkan masalah yang sama. Mari kita tunjukkan dengan contoh program multi-threaded (Gambar 2.5).
+
+\begin{lstlisting}[language=C, caption={Program Multi-threaded (threads.c)}, label={lst:threads}]
+#include <stdio.h>
+#include <stdlib.h>
+#include "common.h"
+#include "common_threads.h"
+
+volatile int counter = 0;
+int loops;
+
+void *worker(void *arg) {
+    int i;
+    for (i = 0; i < loops; i++) {
+        counter++;
+    }
+    return NULL;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "usage: threads <value>\n");
+        exit(1);
+    }
+    loops = atoi(argv[1]);
+    pthread_t p1, p2;
+    printf("Initial value : %d\n", counter);
+
+    Pthread_create(&p1, NULL, worker, NULL);
+    Pthread_create(&p2, NULL, worker, NULL);
+    Pthread_join(p1, NULL);
+    Pthread_join(p2, NULL);
+    printf("Final value : %d\n", counter);
+    return 0;
+}
+\end{lstlisting}
+
+Meskipun Anda mungkin tidak memahami contoh ini sepenuhnya saat ini (dan kita akan mempelajari lebih lanjut tentangnya di bab-bab selanjutnya, di bagian buku tentang konkurensi), ide dasarnya sederhana. Program utama membuat dua \textbf{utas} (\textit{threads}) menggunakan \texttt{Pthread\_create()}\footnote{Panggilan sebenarnya harus ke \texttt{pthread\_create()} huruf kecil; versi huruf besar adalah pembungkus (\textit{wrapper}) kami sendiri yang memanggil \texttt{pthread\_create()} dan memastikan bahwa kode pengembalian menunjukkan bahwa panggilan berhasil. Lihat kode untuk detailnya.}. Anda dapat memikirkan utas sebagai fungsi yang berjalan dalam ruang memori yang sama dengan fungsi lain, dengan lebih dari satu aktif pada satu waktu. Dalam contoh ini, setiap utas mulai berjalan dalam rutinitas yang disebut \texttt{worker()}, di mana ia hanya menaikkan penghitung (\textit{counter}) dalam satu loop sebanyak \texttt{loops} kali.
+
+Di bawah ini adalah transkrip tentang apa yang terjadi ketika kita menjalankan program ini dengan nilai input untuk variabel \texttt{loops} diatur ke 1000. Nilai \texttt{loops} menentukan berapa kali masing-masing dari dua pekerja akan menaikkan penghitung bersama dalam satu loop. Ketika program dijalankan dengan nilai \texttt{loops} diatur ke 1000, berapa nilai akhir \texttt{counter} yang Anda harapkan?
+
+\begin{verbatim}
+prompt> gcc -o threads threads.c -Wall -pthread
+prompt> ./threads 1000
+Initial value : 0
+Final value : 2000
+\end{verbatim}
+
+Seperti yang mungkin Anda duga, ketika kedua utas selesai, nilai akhir penghitung adalah 2000, karena setiap utas menaikkan penghitung 1000 kali. Memang, ketika nilai input \texttt{loops} diatur ke $N$, kita akan mengharapkan output akhir dari program menjadi $2N$. Tetapi hidup tidak sesederhana itu, ternyata. Mari kita jalankan program yang sama, tetapi dengan nilai yang lebih tinggi untuk \texttt{loops}, dan lihat apa yang terjadi:
+
+\begin{verbatim}
+prompt> ./threads 100000
+Initial value : 0
+Final value : 143012 // huh??
+prompt> ./threads 100000
+Initial value : 0
+Final value : 137298 // apa ini??
+\end{verbatim}
+
+Dalam proses ini, ketika kita memberikan nilai input 100.000, alih-alih mendapatkan nilai akhir 200.000, kita malah pertama kali mendapatkan 143.012. Kemudian, ketika kita menjalankan program untuk kedua kalinya, kita tidak hanya mendapatkan nilai yang salah lagi, tetapi juga nilai yang \textit{berbeda} dari yang terakhir kali. Faktanya, jika Anda menjalankan program berulang kali dengan nilai \texttt{loops} yang tinggi, Anda mungkin menemukan bahwa kadang-kadang Anda bahkan mendapatkan jawaban yang benar! Jadi mengapa ini terjadi?
+
+Ternyata, alasan untuk hasil aneh dan tidak biasa ini berkaitan dengan bagaimana instruksi dieksekusi, yaitu satu per satu. Sayangnya, bagian penting dari program di atas, di mana penghitung bersama dinaikkan, mengambil tiga instruksi: satu untuk memuat nilai penghitung dari memori ke register, satu untuk menaikkannya, dan satu untuk menyimpannya kembali ke memori. Karena ketiga instruksi ini tidak dieksekusi secara \textbf{atomik} (sekaligus), hal-hal aneh bisa terjadi. Masalah \textbf{konkurensi} inilah yang akan kita bahas secara sangat rinci di bagian kedua buku ini.
+
+\begin{asidebox}{INTI MASALAH: \\ BAGAIMANA MEMBANGUN PROGRAM KONKUREN YANG BENAR}
+Ketika ada banyak utas yang dieksekusi secara konkuren dalam ruang memori yang sama, bagaimana kita bisa membangun program yang bekerja dengan benar? Primitif apa yang dibutuhkan dari OS? Mekanisme apa yang harus disediakan oleh perangkat keras? Bagaimana kita bisa menggunakannya untuk memecahkan masalah konkurensi?
+\end{asidebox}
+
+\section{Persistensi}
+Tema utama ketiga dari kursus ini adalah \textbf{persistensi}. Dalam memori sistem, data dapat dengan mudah hilang, karena perangkat seperti DRAM menyimpan nilai-nilai dalam cara yang \textbf{volatil} (\textit{volatile}); ketika daya hilang atau sistem macet, data apa pun di memori akan hilang. Oleh karena itu, kita membutuhkan perangkat keras dan perangkat lunak untuk dapat menyimpan data secara \textbf{persisten}; penyimpanan seperti itu sangat penting bagi sistem mana pun karena pengguna sangat peduli dengan data mereka.
+
+Perangkat keras datang dalam bentuk semacam perangkat \textbf{input/output} atau \textbf{I/O}; dalam sistem modern, \textbf{hard drive} adalah repositori umum untuk informasi jangka panjang, meskipun \textbf{solid-state drive} (SSD) juga membuat kemajuan di arena ini.
+
+Perangkat lunak dalam sistem operasi yang biasanya mengelola disk disebut \textbf{sistem file} (\textit{file system}); dengan demikian bertanggung jawab untuk menyimpan \textbf{file} apa pun yang dibuat pengguna dengan cara yang andal dan efisien pada disk sistem.
+
+Tidak seperti abstraksi yang disediakan oleh OS untuk CPU dan memori, OS tidak membuat disk virtual pribadi untuk setiap aplikasi. Sebaliknya, diasumsikan bahwa sering kali, pengguna ingin \textbf{berbagi} informasi yang ada dalam file. Misalnya, saat menulis program C, Anda mungkin pertama kali menggunakan editor (mis., Emacs\footnote{Anda harus menggunakan Emacs. Jika Anda menggunakan vi, mungkin ada sesuatu yang salah dengan Anda. Jika Anda menggunakan sesuatu yang bukan editor kode asli, itu bahkan lebih buruk.}) untuk membuat dan mengedit file C (\texttt{emacs -nw main.c}). Setelah selesai, Anda dapat menggunakan kompiler untuk mengubah kode sumber menjadi executable (mis., \texttt{gcc -o main main.c}). Setelah selesai, Anda dapat menjalankan executable baru (mis., \texttt{./main}). Jadi, Anda dapat melihat bagaimana file dibagikan di berbagai proses. Pertama, Emacs membuat file yang berfungsi sebagai input ke kompiler; kompiler menggunakan file input itu untuk membuat file executable baru (dalam banyak langkah — ambil kursus kompiler untuk detailnya); akhirnya, executable baru kemudian dijalankan. Dan dengan demikian program baru lahir!
+
+Untuk memahami ini dengan lebih baik, mari kita lihat beberapa kode. Gambar 2.6 menyajikan kode untuk membuat file (\texttt{/tmp/file}) yang berisi string ``hello world''.
+
+\begin{lstlisting}[language=C, caption={Program yang Melakukan I/O (io.c)}, label={lst:io}]
+#include <stdio.h>
+#include <unistd.h>
+#include <assert.h>
+#include <fcntl.h>
+#include <sys/types.h>
+
+int main(int argc, char *argv[]) {
+    int fd = open("/tmp/file",
+        O_WRONLY|O_CREAT|O_TRUNC,
+        S_IRWXU);
+    assert(fd > -1);
+    int rc = write(fd, "hello world\n", 12);
+    assert(rc == 12);
+    close(fd);
+    return 0;
+}
+\end{lstlisting}
+
+Untuk menyelesaikan tugas ini, program membuat tiga panggilan ke sistem operasi. Yang pertama, panggilan ke \texttt{open()}, membuka file dan membuatnya; yang kedua, \texttt{write()}, menulis beberapa data ke file; yang ketiga, \texttt{close()}, hanya menutup file sehingga menunjukkan program tidak akan menulis data lagi ke dalamnya. \textbf{System calls} ini dialihkan ke bagian sistem operasi yang disebut \textbf{sistem file}, yang kemudian menangani permintaan dan mengembalikan semacam kode kesalahan kepada pengguna.
+
+Anda mungkin bertanya-tanya apa yang dilakukan OS untuk benar-benar menulis ke disk. Kami akan menunjukkannya kepada Anda tetapi Anda harus berjanji untuk menutup mata Anda terlebih dahulu; itu sangat tidak menyenangkan. Sistem file harus melakukan cukup banyak pekerjaan: pertama mencari tahu di mana di disk data baru ini akan berada, dan kemudian melacaknya dalam berbagai struktur yang dikelola sistem file. Melakukan hal itu memerlukan penerbitan permintaan I/O ke perangkat penyimpanan yang mendasarinya, untuk membaca struktur yang ada atau memperbaruinya (menulis). Siapa pun yang pernah menulis \textbf{device driver}\footnote{Device driver adalah beberapa kode dalam sistem operasi yang tahu cara menangani perangkat tertentu. Kita akan berbicara lebih banyak tentang perangkat dan driver perangkat nanti.} tahu, membuat perangkat melakukan sesuatu atas nama Anda adalah proses yang rumit dan mendetail. Ini membutuhkan pengetahuan yang mendalam tentang antarmuka perangkat tingkat rendah dan semantiknya yang tepat. Untungnya, OS menyediakan cara standar dan sederhana untuk mengakses perangkat melalui panggilan sistemnya. Jadi, OS kadang-kadang dilihat sebagai \textbf{pustaka standar}.
+
+Tentu saja, ada lebih banyak detail tentang bagaimana perangkat diakses, dan bagaimana sistem file mengelola data secara persisten di atas perangkat tersebut. Untuk alasan kinerja, sebagian besar sistem file pertama-tama menunda penulisan semacam itu untuk sementara waktu, berharap untuk mengelompokkannya menjadi grup yang lebih besar. Untuk menangani masalah kerusakan sistem selama penulisan, sebagian besar sistem file menggabungkan semacam protokol penulisan yang rumit, seperti \textbf{journaling} atau \textbf{copy-on-write}, dengan hati-hati memesan penulisan ke disk untuk memastikan bahwa jika kegagalan terjadi selama urutan penulisan, sistem dapat memulihkan keadaan yang wajar sesudahnya. Untuk membuat operasi umum yang berbeda menjadi efisien, sistem file menggunakan banyak struktur data dan metode akses yang berbeda, dari daftar sederhana hingga b-tree yang kompleks. Jika semua ini belum masuk akal, bagus! Kami akan membicarakan semua hal ini lebih banyak di bagian ketiga buku ini tentang \textbf{persistensi}, di mana kita akan membahas perangkat dan I/O secara umum, dan kemudian disk, RAID, dan sistem file dengan sangat rinci.
+
+\begin{asidebox}{INTI MASALAH: \\ BAGAIMANA MENYIMPAN DATA SECARA PERSISTEN}
+Sistem file adalah bagian dari OS yang bertanggung jawab mengelola data persisten. Teknik apa yang diperlukan untuk melakukannya dengan benar? Mekanisme dan kebijakan apa yang diperlukan untuk melakukannya dengan kinerja tinggi? Bagaimana keandalan dicapai, dalam menghadapi kegagalan perangkat keras dan perangkat lunak?
+\end{asidebox}
+
+\section{Tujuan Desain}
+Jadi sekarang Anda memiliki gagasan tentang apa yang sebenarnya dilakukan OS: ia mengambil \textbf{sumber daya} fisik, seperti CPU, memori, atau disk, dan \textbf{memvirtualisasikannya}. Ia menangani masalah sulit dan rumit terkait dengan \textbf{konkurensi}. Dan ia menyimpan file secara \textbf{persisten}, sehingga membuatnya aman dalam jangka panjang. Mengingat bahwa kita ingin membangun sistem seperti itu, kita ingin memiliki beberapa tujuan dalam pikiran untuk membantu memfokuskan desain dan implementasi kita dan membuat \textit{trade-off} seperlunya; menemukan set \textit{trade-off} yang tepat adalah kunci untuk membangun sistem.
+
+Salah satu tujuan paling mendasar adalah membangun beberapa \textbf{abstraksi} agar sistem nyaman dan mudah digunakan. Abstraksi sangat mendasar untuk semua yang kita lakukan dalam ilmu komputer. Abstraksi memungkinkan untuk menulis program besar dengan membaginya menjadi potongan-potongan kecil dan dapat dimengerti, untuk menulis program seperti itu dalam bahasa tingkat tinggi seperti C\footnote{Beberapa dari Anda mungkin keberatan menyebut C sebagai bahasa tingkat tinggi. Ingat ini adalah kursus OS, di mana kami senang tidak harus mengkode dalam assembly sepanjang waktu!} tanpa memikirkan tentang assembly, untuk menulis kode dalam assembly tanpa memikirkan tentang gerbang logika, dan untuk membangun prosesor dari gerbang tanpa memikirkan terlalu banyak tentang transistor. Abstraksi sangat mendasar sehingga kadang-kadang kita melupakan pentingnya, tetapi kita tidak akan melupakannya di sini; jadi, di setiap bagian, kita akan membahas beberapa abstraksi utama yang telah berkembang dari waktu ke waktu, memberi Anda cara untuk memikirkan tentang bagian-bagian dari OS.
+
+Satu tujuan dalam merancang dan mengimplementasikan sistem operasi adalah untuk memberikan \textbf{kinerja tinggi}; cara lain untuk mengatakan ini adalah tujuan kami adalah untuk \textbf{meminimalkan overhead} dari OS. Virtualisasi dan membuat sistem mudah digunakan sangat berharga, tetapi tidak dengan biaya berapa pun; jadi, kita harus berusaha untuk menyediakan virtualisasi dan fitur OS lainnya tanpa overhead yang berlebihan. Overhead ini muncul dalam sejumlah bentuk: waktu ekstra (lebih banyak instruksi) dan ruang ekstra (di memori atau di disk). Kami akan mencari solusi yang meminimalkan satu atau yang lain atau keduanya, jika memungkinkan. Kesempurnaan, bagaimanapun, tidak selalu dapat dicapai, sesuatu yang akan kita pelajari untuk diperhatikan dan (jika perlu) ditoleransi.
+
+Tujuan lain adalah memberikan \textbf{perlindungan} (\textit{protection}) antara aplikasi, serta antara OS dan aplikasi. Karena kami ingin mengizinkan banyak program berjalan pada saat yang sama, kami ingin memastikan bahwa perilaku buruk yang berbahaya atau tidak disengaja dari satu program tidak membahayakan yang lain; kita tentu tidak ingin aplikasi dapat membahayakan OS itu sendiri (karena itu akan mempengaruhi semua program yang berjalan pada sistem). Perlindungan adalah inti dari salah satu prinsip utama yang mendasari sistem operasi, yaitu \textbf{isolasi}; mengisolasi proses satu sama lain adalah kunci perlindungan dan dengan demikian mendasari banyak hal yang harus dilakukan OS.
+
+Sistem operasi juga harus berjalan tanpa henti; ketika gagal, semua aplikasi yang berjalan pada sistem juga gagal. Karena ketergantungan ini, sistem operasi sering berusaha untuk memberikan tingkat \textbf{keandalan} (\textit{reliability}) yang tinggi. Seiring berkembangnya sistem operasi yang semakin kompleks (kadang-kadang berisi jutaan baris kode), membangun sistem operasi yang andal adalah tantangan yang cukup besar — dan memang, banyak penelitian yang sedang berlangsung di lapangan (termasuk beberapa dari pekerjaan kami sendiri [BS+09, SS+10]) berfokus pada masalah yang tepat ini.
+
+Tujuan lain masuk akal: \textbf{efisiensi energi} penting di dunia kita yang semakin hijau; \textbf{keamanan} (perpanjangan dari perlindungan, sungguh) terhadap aplikasi berbahaya sangat penting, terutama di masa-masa yang sangat terhubung jaringan ini; \textbf{mobilitas} semakin penting karena OS dijalankan pada perangkat yang lebih kecil dan lebih kecil. Tergantung pada bagaimana sistem digunakan, OS akan memiliki tujuan yang berbeda dan dengan demikian kemungkinan diimplementasikan setidaknya dengan cara yang sedikit berbeda. Namun, seperti yang akan kita lihat, banyak prinsip yang akan kami sajikan tentang cara membangun OS berguna pada berbagai perangkat yang berbeda.
+
+\section{Sedikit Sejarah}
+Sebelum menutup pengantar ini, mari kita sajikan sejarah singkat tentang bagaimana sistem operasi berkembang. Seperti sistem apa pun yang dibangun oleh manusia, ide-ide bagus terakumulasi dalam sistem operasi dari waktu ke waktu, ketika para insinyur mempelajari apa yang penting dalam desain mereka. Di sini, kita membahas beberapa perkembangan utama. Untuk pembahasan yang lebih kaya, lihat sejarah sistem operasi yang sangat baik oleh Brinch Hansen [BH00].
+
+\subsection*{Sistem Operasi Awal: Hanya Pustaka}
+Pada awalnya, sistem operasi tidak melakukan terlalu banyak. Pada dasarnya, itu hanyalah sekumpulan pustaka dari fungsi yang umum digunakan; misalnya, alih-alih meminta setiap pemrogram sistem menulis kode penanganan I/O tingkat rendah, ``OS'' akan menyediakan API semacam itu, dan dengan demikian membuat hidup lebih mudah bagi pengembang.
+
+Biasanya, pada sistem mainframe lama ini, satu program berjalan pada satu waktu, dikendalikan oleh operator manusia. Sebagian besar dari apa yang Anda pikir akan dilakukan OS modern (mis., memutuskan urutan menjalankan pekerjaan) dilakukan oleh operator ini. Jika Anda adalah pengembang yang cerdas, Anda akan bersikap baik kepada operator ini, sehingga mereka mungkin memindahkan pekerjaan Anda ke bagian depan antrian.
+
+Mode komputasi ini dikenal sebagai \textbf{pemrosesan batch} (\textit{batch processing}), karena sejumlah pekerjaan disiapkan dan kemudian dijalankan dalam ``batch'' oleh operator. Komputer, pada saat itu, tidak digunakan secara interaktif, karena biaya: itu terlalu mahal untuk membiarkan pengguna duduk di depan komputer dan menggunakannya, karena sebagian besar waktu itu hanya akan duduk diam, menghabiskan biaya fasilitas ratusan ribu dolar per jam [BH00].
+
+\subsection*{Melampaui Pustaka: Perlindungan}
+Dalam bergerak melampaui sekadar pustaka layanan yang umum digunakan, sistem operasi mengambil peran yang lebih sentral dalam mengelola mesin. Satu aspek penting dari ini adalah kesadaran bahwa kode yang dijalankan atas nama OS adalah istimewa; ia memiliki kendali atas perangkat dan dengan demikian harus diperlakukan secara berbeda dari kode aplikasi normal. Mengapa ini? Yah, bayangkan jika Anda mengizinkan aplikasi apa pun untuk membaca dari mana saja di disk; gagasan privasi keluar jendela, karena program apa pun dapat membaca file apa pun. Jadi, menerapkan \textbf{sistem file} (untuk mengelola file Anda) sebagai pustaka tidak masuk akal. Sebaliknya, sesuatu yang lain diperlukan.
+
+Dengan demikian, gagasan tentang \textbf{system call} ditemukan, dipelopori oleh sistem komputasi Atlas [K+61,L78]. Alih-alih menyediakan rutinitas OS sebagai pustaka (di mana Anda baru saja membuat \textbf{panggilan prosedur} untuk mengaksesnya), idenya di sini adalah menambahkan sepasang instruksi perangkat keras khusus dan status perangkat keras untuk membuat transisi ke OS menjadi proses yang lebih formal dan terkontrol.
+
+Perbedaan utama antara panggilan sistem dan panggilan prosedur adalah bahwa panggilan sistem mentransfer kontrol (yaitu, melompat) ke OS sambil secara bersamaan menaikkan \textbf{tingkat hak istimewa perangkat keras} (\textit{hardware privilege level}). Aplikasi pengguna berjalan dalam apa yang disebut sebagai \textbf{mode pengguna} (\textit{user mode}) yang berarti perangkat keras membatasi apa yang dapat dilakukan aplikasi; misalnya, aplikasi yang berjalan dalam mode pengguna biasanya tidak dapat memulai permintaan I/O ke disk, mengakses halaman memori fisik apa pun, atau mengirim paket di jaringan. Ketika panggilan sistem dimulai (biasanya melalui instruksi perangkat keras khusus yang disebut \textbf{trap}), perangkat keras mentransfer kontrol ke \textbf{trap handler} yang telah ditentukan sebelumnya (yang disiapkan OS sebelumnya) dan secara bersamaan menaikkan tingkat hak istimewa ke \textbf{mode kernel}. Dalam mode kernel, OS memiliki akses penuh ke perangkat keras sistem dan dengan demikian dapat melakukan hal-hal seperti memulai permintaan I/O atau membuat lebih banyak memori tersedia untuk program. Ketika OS selesai melayani permintaan, ia mengembalikan kontrol kembali ke pengguna melalui instruksi \textbf{return-from-trap} khusus, yang kembali ke mode pengguna sambil secara bersamaan mengembalikan kontrol kembali ke tempat aplikasi tinggalkan.
+
+\begin{asidebox}{INFO TAMBAHAN: PENTINGNYA UNIX}
+Sulit untuk melebih-lebihkan pentingnya UNIX dalam sejarah sistem operasi. Dipengaruhi oleh sistem sebelumnya (khususnya, sistem \textbf{Multics} yang terkenal dari MIT), UNIX menyatukan banyak ide hebat dan membuat sistem yang sederhana namun kuat.
+
+Mendasari UNIX asli ``Bell Labs'' adalah prinsip pemersatu membangun program kecil yang kuat yang dapat dihubungkan bersama untuk membentuk alur kerja yang lebih besar. \textbf{Shell}, tempat Anda mengetik perintah, menyediakan primitif seperti \textbf{pipa} (\textit{pipes}) untuk memungkinkan pemrograman tingkat meta seperti itu, dan dengan demikian menjadi mudah untuk merangkai program bersama untuk menyelesaikan tugas yang lebih besar. Misalnya, untuk menemukan baris file teks yang memiliki kata ``foo'' di dalamnya, dan kemudian menghitung berapa banyak baris seperti itu ada, Anda akan mengetik: \texttt{grep foo file.txt|wc -l}, dengan demikian menggunakan program \texttt{grep} dan \texttt{wc} (hitung kata) untuk mencapai tugas Anda.
+
+Lingkungan UNIX ramah bagi pemrogram dan pengembang, juga menyediakan kompiler untuk \textbf{bahasa pemrograman C} yang baru. Memudahkannya bagi pemrogram untuk menulis program mereka sendiri, serta membagikannya, membuat UNIX sangat populer. Dan mungkin sangat membantu bahwa penulis memberikan salinan secara gratis kepada siapa saja yang meminta, bentuk awal dari \textbf{perangkat lunak sumber terbuka} (\textit{open-source software}).
+
+Juga yang sangat penting adalah aksesibilitas dan keterbacaan kode. Memiliki kernel kecil yang indah yang ditulis dalam C mengundang orang lain untuk bermain dengan kernel, menambahkan fitur baru dan keren. Misalnya, grup giat di Berkeley, yang dipimpin oleh \textbf{Bill Joy}, membuat distribusi yang luar biasa (\textbf{Berkeley Systems Distribution}, atau \textbf{BSD}) yang memiliki memori virtual canggih, sistem file, dan subsistem jaringan. Joy kemudian mendirikan \textbf{Sun Microsystems}.
+
+Sayangnya, penyebaran UNIX sedikit melambat karena perusahaan mencoba menegaskan kepemilikan dan mendapat untung darinya, hasil yang tidak menguntungkan (tetapi umum) dari pengacara yang terlibat. Banyak perusahaan memiliki varian mereka sendiri: \textbf{SunOS} dari Sun Microsystems, \textbf{AIX} dari IBM, \textbf{HPUX} (a.k.a. ``H-Pucks'') dari HP, dan \textbf{IRIX} dari SGI. Pertengkaran hukum antara AT\&T/Bell Labs dan pemain lain ini memberikan awan gelap di atas UNIX, dan banyak yang bertanya-tanya apakah itu akan bertahan, terutama karena Windows diperkenalkan dan mengambil alih banyak pasar PC...
+\end{asidebox}
+
+\subsection*{Era Multiprogamming}
+Di mana sistem operasi benar-benar lepas landas adalah di era komputasi di luar mainframe, yaitu \textbf{komputer mini}. Mesin klasik seperti keluarga PDP dari Digital Equipment membuat komputer jauh lebih terjangkau; jadi, alih-alih memiliki satu mainframe per organisasi besar, sekarang kumpulan orang yang lebih kecil dalam suatu organisasi kemungkinan bisa memiliki komputer mereka sendiri. Tidak mengherankan, salah satu dampak utama dari penurunan biaya ini adalah peningkatan aktivitas pengembang; lebih banyak orang pintar mendapatkan tangan mereka di komputer dan dengan demikian membuat sistem komputer melakukan hal-hal yang lebih menarik dan indah.
+
+Secara khusus, \textbf{multiprogramming} menjadi hal biasa karena keinginan untuk memanfaatkan sumber daya mesin dengan lebih baik. Alih-alih hanya menjalankan satu pekerjaan pada satu waktu, OS akan memuat sejumlah pekerjaan ke dalam memori dan beralih dengan cepat di antara mereka, sehingga meningkatkan pemanfaatan CPU. Peralihan ini sangat penting karena perangkat I/O lambat; membiarkan program menunggu di CPU sementara I/O-nya sedang dilayani adalah pemborosan waktu CPU. Sebaliknya, mengapa tidak beralih ke pekerjaan lain dan menjalankannya sebentar?
+
+Keinginan untuk mendukung multiprogramming dan tumpang tindih dengan adanya I/O dan interupsi memaksa inovasi dalam pengembangan konseptual sistem operasi di sepanjang sejumlah arah. Masalah seperti \textbf{perlindungan memori} menjadi penting; kami tidak ingin satu program dapat mengakses memori program lain. Memahami cara menangani masalah \textbf{konkurensi} yang diperkenalkan oleh multiprogramming juga kritis; memastikan OS berperilaku dengan benar meskipun ada interupsi adalah tantangan besar. Kami akan mempelajari masalah ini dan topik terkait nanti di buku ini.
+
+Salah satu kemajuan praktis utama pada masa itu adalah pengenalan sistem operasi UNIX, terutama berkat Ken Thompson (dan Dennis Ritchie) di Bell Labs (ya, perusahaan telepon). UNIX mengambil banyak ide bagus dari sistem operasi yang berbeda (terutama dari Multics [O72], dan beberapa dari sistem seperti TENEX [B+72] dan Sistem Berbagi Waktu Berkeley [S68]), tetapi membuatnya lebih sederhana dan lebih mudah digunakan. Segera tim ini mengirimkan kaset berisi kode sumber UNIX kepada orang-orang di seluruh dunia, banyak dari mereka kemudian terlibat dan menambahkan ke sistem itu sendiri; lihat INFO TAMBAHAN untuk detail lebih lanjut\footnote{Kami akan menggunakan INFO TAMBAHAN dan kotak teks terkait lainnya untuk menarik perhatian ke berbagai item yang tidak cukup sesuai dengan alur utama teks. Kadang-kadang, kami bahkan akan menggunakannya hanya untuk membuat lelucon, karena mengapa tidak bersenang-senang sedikit di sepanjang jalan? Ya, banyak leluconnya buruk.}.
+
+\subsection*{Era Modern}
+Di luar komputer mini datang jenis mesin baru, lebih murah, lebih cepat, dan untuk massa: \textbf{komputer pribadi}, atau \textbf{PC} seperti yang kita sebut hari ini. Dipimpin oleh mesin awal Apple (mis., Apple II) dan IBM PC, jenis mesin baru ini akan segera menjadi kekuatan dominan dalam komputasi, karena biaya rendahnya memungkinkan satu mesin per desktop alih-alih komputer mini bersama per kelompok kerja.
+
+Sayangnya, untuk sistem operasi, PC pada awalnya mewakili lompatan besar ke belakang, karena sistem awal lupa (atau tidak pernah tahu) pelajaran yang dipelajari di era komputer mini. Misalnya, sistem operasi awal seperti \textbf{DOS} (\textbf{Disk Operating System}, dari \textbf{Microsoft}) tidak menganggap perlindungan memori itu penting; jadi, aplikasi berbahaya (atau mungkin hanya diprogram dengan buruk) dapat mencoret-coret seluruh memori. Generasi pertama \textbf{Mac OS} (v9 dan sebelumnya) mengambil pendekatan koperasi untuk penjadwalan pekerjaan; jadi, utas yang secara tidak sengaja terjebak dalam loop tak terbatas dapat mengambil alih seluruh sistem, memaksa reboot. Daftar menyakitkan fitur OS yang hilang dalam generasi sistem ini panjang, terlalu panjang untuk diskusi penuh di sini.
+
+Untungnya, setelah beberapa tahun menderita, fitur lama sistem operasi komputer mini mulai menemukan jalan mereka ke desktop. Misalnya, Mac OS X/macOS memiliki UNIX pada intinya, termasuk semua fitur yang diharapkan dari sistem yang matang seperti itu. Windows juga telah mengadopsi banyak ide hebat dalam sejarah komputasi, dimulai khususnya dengan Windows NT, lompatan besar ke depan dalam teknologi OS Microsoft. Bahkan ponsel saat ini menjalankan sistem operasi (seperti Linux) yang jauh lebih mirip dengan apa yang dijalankan komputer mini pada 1970-an daripada apa yang dijalankan PC pada 1980-an (syukurlah); senang melihat bahwa ide-ide bagus yang dikembangkan pada masa kejayaan pengembangan OS telah menemukan jalan mereka ke dunia modern. Lebih baik lagi adalah bahwa ide-ide ini terus berkembang, menyediakan lebih banyak fitur dan membuat sistem modern menjadi lebih baik bagi pengguna dan aplikasi.
+
+\begin{asidebox}{INFO TAMBAHAN: DAN KEMUDIAN DATANGLAH LINUX}
+Untungnya bagi UNIX, seorang peretas muda Finlandia bernama \textbf{Linus Torvalds} memutuskan untuk menulis versi UNIX-nya sendiri yang meminjam banyak pada prinsip dan ide di balik sistem asli, tetapi tidak dari basis kode, sehingga menghindari masalah legalitas. Dia meminta bantuan dari banyak orang lain di seluruh dunia, memanfaatkan alat GNU canggih yang sudah ada [G85], dan segera \textbf{Linux} lahir (serta gerakan perangkat lunak sumber terbuka modern).
+
+Seiring era internet muncul, sebagian besar perusahaan (seperti Google, Amazon, Facebook, dan lainnya) memilih untuk menjalankan Linux, karena gratis dan dapat dengan mudah dimodifikasi sesuai kebutuhan mereka; memang, sulit membayangkan kesuksesan perusahaan-perusahaan baru ini seandainya sistem seperti itu tidak ada. Karena ponsel pintar menjadi platform dominan yang dihadapi pengguna, Linux menemukan benteng di sana juga (melalui Android), karena banyak alasan yang sama. Dan Steve Jobs membawa lingkungan operasi \textbf{NeXTStep} berbasis UNIX bersamanya ke Apple, sehingga membuat UNIX populer di desktop (meskipun banyak pengguna teknologi Apple mungkin bahkan tidak menyadari fakta ini). Jadi UNIX terus hidup, lebih penting hari ini daripada sebelumnya. Dewa-dewa komputasi, jika Anda percaya pada mereka, harus berterima kasih atas hasil yang luar biasa ini.
+\end{asidebox}
+
+\section{Ringkasan}
+Jadi, kita punya pengantar ke OS. Sistem operasi saat ini membuat sistem relatif mudah digunakan, dan hampir semua sistem operasi yang Anda gunakan saat ini telah dipengaruhi oleh perkembangan yang akan kita bahas di seluruh buku ini.
+
+Sayangnya, karena keterbatasan waktu, ada sejumlah bagian dari OS yang tidak akan kita bahas dalam buku ini. Misalnya, ada banyak kode \textbf{jaringan} dalam sistem operasi; kami menyerahkan kepada Anda untuk mengambil kelas jaringan untuk mempelajari lebih lanjut tentang itu. Demikian pula, perangkat \textbf{grafis} sangat penting; ambil kursus grafis untuk memperluas pengetahuan Anda ke arah itu. Akhirnya, beberapa buku sistem operasi berbicara banyak tentang \textbf{keamanan}; kami akan melakukannya dalam arti bahwa OS harus memberikan perlindungan antara program yang berjalan dan memberi pengguna kemampuan untuk melindungi file mereka, tetapi kami tidak akan menyelidiki masalah keamanan yang lebih dalam yang mungkin ditemukan dalam kursus keamanan.
+
+Namun, ada banyak topik penting yang akan kami bahas, termasuk dasar-dasar virtualisasi CPU dan memori, konkurensi, dan persistensi melalui perangkat dan sistem file. Jangan khawatir! Meskipun ada banyak materi yang harus dibahas, sebagian besarnya cukup keren, dan di ujung jalan, Anda akan memiliki apresiasi baru tentang bagaimana sistem komputer benar-benar bekerja. Sekarang mulailah bekerja!
+
+\section*{Referensi}
+\begin{itemize}
+    \item {[BS+09]} “Tolerating File-System Mistakes with EnvyFS” by L. Bairavasundaram, S. Sundararaman, A. Arpaci-Dusseau, R. Arpaci-Dusseau. USENIX ’09, San Diego, CA, June 2009.
+    \item {[BH00]} “The Evolution of Operating Systems” by P. Brinch Hansen. In ’Classic Operating Systems: From Batch Processing to Distributed Systems.’ Springer-Verlag, New York, 2000.
+    \item {[B+72]} “TENEX, A Paged Time Sharing System for the PDP-10” by D. Bobrow, J. Burchfiel, D. Murphy, R. Tomlinson. CACM, Volume 15, Number 3, March 1972.
+    \item {[B75]} “The Mythical Man-Month” by F. Brooks. Addison-Wesley, 1975.
+    \item {[BOH10]} “Computer Systems: A Programmer’s Perspective” by R. Bryant and D. O’Hallaron. Addison-Wesley, 2010.
+    \item {[G85]} “The GNU Manifesto” by R. Stallman. 1985. \url{www.gnu.org/gnu/manifesto.html}.
+    \item {[K+61]} “One-Level Storage System” by T. Kilburn, D.B.G. Edwards, M.J. Lanigan, F.H. Sumner. IRE Transactions on Electronic Computers, April 1962.
+    \item {[L78]} “The Manchester Mark I and Atlas: A Historical Perspective” by S. H. Lavington. Communications of the ACM, Volume 21:1, January 1978.
+    \item {[O72]} “The Multics System: An Examination of its Structure” by Elliott Organick. MIT Press, 1972.
+    \item {[PP03]} “Introduction to Computing Systems: From Bits and Gates to C and Beyond” by Yale N. Patt, Sanjay J. Patel. McGraw-Hill, 2003.
+    \item {[RT74]} “The UNIX Time-Sharing System” by Dennis M. Ritchie, Ken Thompson. CACM, Volume 17: 7, July 1974.
+    \item {[S68]} “SDS 940 Time-Sharing System” by Scientific Data Systems. TECHNICAL MANUAL, SDS 90 11168, August 1968.
+    \item {[SS+10]} “Membrane: Operating System Support for Restartable File Systems” by S. Sundararaman, S. Subramanian, A. Rajimwale, A. Arpaci-Dusseau, R. Arpaci-Dusseau, M. Swift. FAST ’10, San Jose, CA, February 2010.
+\end{itemize}
+
+\section*{Pekerjaan Rumah}
+Sebagian besar (dan akhirnya, semua) bab dari buku ini memiliki bagian pekerjaan rumah di bagian akhir. Mengerjakan pekerjaan rumah ini penting, karena masing-masing memungkinkan Anda, pembaca, mendapatkan lebih banyak pengalaman dengan konsep-konsep yang disajikan dalam bab ini.
+
+Ada dua jenis pekerjaan rumah. Yang pertama didasarkan pada \textbf{simulasi}. Simulasi sistem komputer hanyalah program sederhana yang berpura-pura melakukan beberapa bagian menarik dari apa yang dilakukan sistem nyata, dan kemudian melaporkan beberapa metrik output untuk menunjukkan bagaimana sistem berperilaku. Misalnya, simulator hard drive mungkin mengambil serangkaian permintaan, mensimulasikan berapa lama waktu yang dibutuhkan untuk dilayani oleh hard drive dengan karakteristik kinerja tertentu, dan kemudian melaporkan latensi rata-rata permintaan.
+
+Hal keren tentang simulasi adalah mereka membiarkan Anda dengan mudah mengeksplorasi bagaimana sistem berperilaku tanpa kesulitan menjalankan sistem nyata. Memang, mereka bahkan membiarkan Anda membuat sistem yang tidak mungkin ada di dunia nyata (misalnya, hard drive dengan kinerja yang sangat cepat tak terbayangkan), dan dengan demikian melihat potensi dampak teknologi masa depan.
+
+Tentu saja, simulasi bukan tanpa kelemahan. Secara alami, simulasi hanyalah perkiraan tentang bagaimana sistem nyata berperilaku. Jika aspek penting dari perilaku dunia nyata dihilangkan, simulasi akan melaporkan hasil yang buruk. Jadi, hasil dari simulasi harus selalu diperlakukan dengan curiga. Pada akhirnya, bagaimana sistem berperilaku di dunia nyata adalah yang terpenting.
+
+Jenis pekerjaan rumah kedua membutuhkan interaksi dengan \textbf{kode dunia nyata} (\textit{real-world code}). Beberapa pekerjaan rumah ini berfokus pada pengukuran, sementara yang lain hanya memerlukan pengembangan dan eksperimen skala kecil. Keduanya hanyalah upaya kecil ke dunia yang lebih besar yang harus Anda masuki, yaitu cara menulis kode sistem dalam C pada sistem berbasis UNIX. Memang, proyek skala besar, yang melampaui pekerjaan rumah ini, diperlukan untuk mendorong Anda ke arah ini; jadi, di luar hanya mengerjakan pekerjaan rumah, kami sangat menyarankan Anda melakukan proyek untuk memantapkan keterampilan sistem Anda. Lihat halaman ini (\url{https://github.com/remzi-arpacidusseau/ostep-projects}) untuk beberapa proyek.
+
+Untuk melakukan pekerjaan rumah ini, Anda kemungkinan harus berada di mesin berbasis UNIX, menjalankan Linux, macOS, atau sistem serupa. Itu juga harus memiliki kompiler C yang diinstal (mis., \textbf{gcc}) serta Python. Anda juga harus tahu cara mengedit kode di editor kode nyata semacam itu.
+
+% End document removed

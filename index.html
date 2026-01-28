@@ -16,6 +16,15 @@
             --text-color: #f8fafc;
             --text-muted: #94a3b8;
             --accent-color: #38bdf8;
+            --border-color: rgba(255, 255, 255, 0.05); /* Added for border consistency */
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f0f9ff;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --text-muted: #64748b;
+            --border-color: rgba(0, 0, 0, 0.1);
         }
 
         body {
@@ -33,6 +42,33 @@
                 radial-gradient(at 100% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
                 radial-gradient(at 100% 100%, rgba(37, 99, 235, 0.15) 0px, transparent 50%),
                 radial-gradient(at 0% 100%, rgba(56, 189, 248, 0.15) 0px, transparent 50%);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 0.5rem;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
         }
 
         .container {
@@ -53,6 +89,7 @@
             margin: 0 0 0.5rem 0;
             background: linear-gradient(135deg, #60a5fa, #38bdf8);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: -0.02em;
         }
@@ -90,7 +127,7 @@
             transition: all 0.3s ease;
             text-decoration: none;
             color: inherit;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
             position: relative;
             overflow: hidden;
             display: flex;
@@ -204,14 +241,35 @@
         </header>
 
         <div class="grid">
-            <a href="chapter1.html" class="card">
+            <a href="2_Book_Translate/main.pdf" class="card">
                 <div class="card-header">
-                    <span class="chapter-tag">Chapter 1</span>
-                    <svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    <span class="chapter-tag" style="color: #10b981; background: rgba(16, 185, 129, 0.1);">Book</span>
+                    <svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #10b981;"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                 </div>
-                <h2>Pengenalan Sistem Operasi</h2>
-                <p>Fundamental concepts, virtualization, concurrency, persistence, and history of operating systems.</p>
+                <h2>Terjemahan Buku (OSTEP)</h2>
+                <p>Operating Systems: Three Easy Pieces (OSTEP) translated into Indonesian.</p>
             </a>
+
+            <div class="card" style="position: relative;">
+                <a href="chapter1.html" style="text-decoration: none; color: inherit; display: block; flex-grow: 1;">
+                    <div class="card-header">
+                        <span class="chapter-tag">Chapter 1</span>
+                        <svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </div>
+                    <h2>Pengenalan Sistem Operasi</h2>
+                    <p>Fundamental concepts, virtualization, concurrency, persistence, and history of operating systems.</p>
+                </a>
+                
+                <!-- PDF Download Button -->
+                <a href="chapter1.html?print-pdf&theme=light" target="_blank" title="Download PDF (Forces Light Mode)"
+                   style="position: absolute; bottom: 1.5rem; right: 1.5rem; padding: 8px; color: var(--text-muted); background: var(--card-bg); border-radius: 50%; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; z-index: 10;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </a>
+            </div>
             
             <!-- Future chapters can be added here -->
             <!-- 
@@ -229,5 +287,41 @@
             &copy; 2026 lectura.id/os - Institut Teknologi Sumatera
         </footer>
     </div>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle Dark Mode">
+        <!-- Sun Icon -->
+        <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        <!-- Moon Icon -->
+        <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </button>
+
+    <script>
+        const toggleBtn = document.getElementById('themeToggle');
+        const sunIcon = toggleBtn.querySelector('.sun-icon');
+        const moonIcon = toggleBtn.querySelector('.moon-icon');
+        const html = document.documentElement;
+
+        // Check localStorage or default to dark
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        applyTheme(savedTheme);
+
+        function applyTheme(theme) {
+            html.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            
+            if (theme === 'light') {
+                sunIcon.style.display = 'none';
+                moonIcon.style.display = 'block';
+            } else {
+                sunIcon.style.display = 'block';
+                moonIcon.style.display = 'none';
+            }
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            applyTheme(newTheme);
+        });
+    </script>
 </body>
 </html>

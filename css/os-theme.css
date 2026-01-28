@@ -15,6 +15,14 @@
     --text-main: #cdd6f4;
     --text-muted: #a6adc8;
 
+    /* Palette Constants */
+    --color-green: #a6e3a1;
+    --color-yellow: #f9e2af;
+    --color-red: #f38ba8;
+    --color-peach: #fab387;
+    --color-mauve: #cba6f7;
+    --color-blue: #89b4fa;
+
     /* Glassmorphism */
     --glass-bg: rgba(30, 30, 46, 0.7);
     --glass-border: rgba(147, 153, 178, 0.2);
@@ -28,6 +36,54 @@
     --block-green-border: #a6e3a1;
 }
 
+.theme-light {
+    /* Color Palette - Light Mode */
+    --bg-gradient: none; /* Removed gradient for cleaner light mode & print */
+    --base-bg: #ffffff; /* Pure white for better printing */
+    --primary-color: #2563eb; /* Darker blue for light bg */
+    --accent-color: #db2777; /* Darker pink for light bg */
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+
+    /* Palette Adaptive Overrides */
+    --color-green: #15803d;
+    --color-yellow: #b45309;
+    --color-red: #be185d;
+    --color-peach: #c2410c;
+    --color-mauve: #7e22ce;
+    --color-blue: #1d4ed8;
+
+    /* Glassmorphism */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(0, 0, 0, 0.1);
+    
+    /* Blocks */
+    --block-red-bg: rgba(243, 139, 168, 0.2);
+    --block-red-border: #be185d;
+    --block-blue-bg: rgba(137, 180, 250, 0.2);
+    --block-blue-border: #1d4ed8;
+    --block-green-bg: rgba(166, 227, 161, 0.2);
+    --block-green-border: #15803d;
+}
+
+@media print {
+    body, .reveal {
+        background: #ffffff !important;
+        background-image: none !important;
+    }
+    
+    /* Override reveal.js generated backgrounds */
+    .reveal .slide-background-content {
+        background: #ffffff !important;
+        background-image: none !important;
+    }
+    
+    /* Ensure text is black/dark */
+    .reveal, .reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6, .reveal p, .reveal li {
+        color: #000 !important;
+    }
+}
+
 body {
     background-color: var(--base-bg);
     background-image: var(--bg-gradient);
@@ -37,7 +93,7 @@ body {
 /* Typography Overrides */
 .reveal {
     font-family: 'Google Sans', 'Outfit', sans-serif !important;
-    font-size: 32px; /* Reduced from default ~40px */
+    font-size: 24px !important; /* Reduced from 28px to fix overflow */
     color: var(--text-main);
 }
 
@@ -52,15 +108,16 @@ body {
 /* Fine-tune alignments */
 .reveal h1 { 
     font-weight: 700; 
-    font-size: 2.2em; /* Reduced */
+    font-size: 1.8em; /* Reduced from 2.0em */
     background: linear-gradient(135deg, #cba6f7, #f38ba8); 
     -webkit-background-clip: text; 
+    background-clip: text;
     -webkit-text-fill-color: transparent; 
 }
 
-.reveal h2 { font-weight: 600; font-size: 1.8em; color: #cba6f7; }
-.reveal h3 { font-weight: 600; font-size: 1.5em; color: #89b4fa; text-align: left; }
-.reveal h4 { font-weight: 500; font-size: 1.1em; color: var(--text-muted); text-align: left; }
+.reveal h2 { font-weight: 600; font-size: 1.5em; color: #cba6f7; } /* Reduced from 1.6em */
+.reveal h3 { font-weight: 600; font-size: 1.3em; color: #89b4fa; text-align: left; } /* Reduced from 1.5em */
+.reveal h4 { font-weight: 500; font-size: 1.0em; color: var(--text-muted); text-align: left; } /* Reduced from 1.1em */
 
 .reveal p, .reveal ul, .reveal ol {
     margin-bottom: 0.5em;

@@ -1,0 +1,98 @@
+\documentclass[12pt]{book}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[indonesian]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\usepackage{parskip}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+% \usepackage{tocloft} % Removed due to conflict
+
+% Increase TOC font size (Manual approach)
+% \renewcommand{\cftchapfont}{\large\bfseries} ...
+
+% Custom Chapter Format
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries}
+  {\flushright\fontsize{40}{48}\selectfont\thechapter}
+  {0pt}
+  {\hrule\vspace{1cm}\centering\fontsize{24}{28}\selectfont}
+\titlespacing*{\chapter}{0pt}{0pt}{40pt}
+
+% Layout settings to mimic the book
+\geometry{a4paper, margin=2.5cm}
+\renewcommand{\familydefault}{\sfdefault} % Sans serif font
+
+% Colors
+\definecolor{lightgray}{RGB}{230,230,230}
+\definecolor{darkgray}{RGB}{100,100,100}
+
+% Code listing style
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    frame=single,
+    breaklines=true,
+    showstringspaces=false,
+    captionpos=b
+}
+
+% Page Headers and Footers
+\pagestyle{fancy}
+\fancyhf{} % Clear all headers and footers
+\fancyfoot[C]{\footnotesize Dilarang menyebarluaskan, buku terjemahan ini tidak memiliki ijin edar dan ijin terjemahan}
+\fancyfoot[LE,RO]{\thepage} % Page number on outer corners
+\renewcommand{\headrulewidth}{0pt} % Remove header rule
+
+% Redefine plain style for chapter starting pages
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyfoot[C]{\footnotesize Dilarang menyebarluaskan, buku terjemahan ini tidak memiliki ijin edar dan ijin terjemahan}
+  \fancyfoot[LE,RO]{\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+}
+
+% Box for "Crux of the Problem" and Asides
+\newtcolorbox{asidebox}[1]{
+    colback=lightgray,
+    colframe=lightgray,
+    coltitle=black,
+    fonttitle=\bfseries\large\centering,
+    title={#1},
+    arc=0mm,
+    boxrule=0mm,
+    top=5mm,
+    bottom=5mm,
+    left=5mm,
+    right=5mm
+}
+
+\begin{document}
+
+\frontmatter
+
+\input{cover}
+\input{approval}
+
+{
+  \large
+  \tableofcontents
+}
+
+\mainmatter
+
+% Include Chapter 1
+% Note: The file chapter1-book-translate.tex should not have a preamble or \begin{document}
+\input{chapter1-book-translate.tex}
+\input{chapter2-book-translate.tex}
+
+\end{document}

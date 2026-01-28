@@ -11,7 +11,7 @@
 
     <link rel="stylesheet" href="dist/reset.css">
     <link rel="stylesheet" href="dist/reveal.css">
-    <link rel="stylesheet" href="dist/theme/black.css"> <!-- Default base -->
+    <!-- Theme handled by script below -->
     <link rel="stylesheet" href="css/os-theme.css"> <!-- Custom Theme Refinements -->
     
     <!-- Fonts -->
@@ -22,9 +22,31 @@
 
     <!-- Theme used for syntax highlighting of code -->
     <link rel="stylesheet" href="plugin/highlight/atom-one-dark.css">
+
+    <script>
+        // Apply saved theme immediately to prevent flash
+        const urlParams = new URLSearchParams(window.location.search);
+        const forceLight = urlParams.get('theme') === 'light';
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+
+        if (forceLight || savedTheme === 'light') {
+            document.write('<link rel="stylesheet" href="dist/theme/white.css" id="theme">');
+            document.documentElement.classList.add('theme-light');
+        } else {
+            document.write('<link rel="stylesheet" href="dist/theme/black.css" id="theme">');
+        }
+    </script>
 </head>
 
 <body>
+
+    <!-- Back Button -->
+    <div style="position: fixed; top: 20px; left: 20px; z-index: 9999;">
+        <a href="index.html" style="color: var(--text-main); text-decoration: none; background: var(--glass-bg); padding: 10px 15px; border-radius: 8px; backdrop-filter: blur(5px); font-family: 'Outfit', sans-serif; font-size: 0.9em; border: 1px solid var(--glass-border); display: flex; align-items: center; gap: 8px; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            Back to Home
+        </a>
+    </div>
 
     <div class="reveal">
         <div class="slides">
@@ -34,10 +56,10 @@
                 <div class="glass-card" style="display: inline-block; padding: 40px 60px;">
                     <img src="assets/images/Logo.png" alt="Logo" style="height: 100px; background: transparent; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));" class="demo-logo">
                     <h2 style="font-size: 2.5em; margin: 10px 0;">Pengenalan Sistem Operasi</h2>
-                    <h4 style="margin-bottom: 20px;">Weeks 1: Konsep Dasar</h4>
+                    <h4 style="margin-bottom: 20px; text-align: center;">Week 1: Konsep Dasar</h4>
                     
                     <div class="author-box">
-                        <p style="margin: 5px 0;"><strong style="color: #89b4fa;">lectura.id/os</strong></p>
+                        <p style="margin: 5px 0;"><strong style="color: var(--color-blue);">lectura.id/os</strong></p>
                         <p style="margin: 5px 0;">Program Studi Teknik Informatika | Institut Teknologi Sumatera</p>
                         <p style="margin: 10px 0 0 0; color: #a6adc8; font-family: 'JetBrains Mono', monospace;">2026</p>
                     </div>
@@ -54,15 +76,15 @@
                             Pendahuluan
                         </li>
                         <li style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center;">
-                            <span style="background: #a6e3a1; color: #000; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; margin-right: 15px; font-weight: bold; font-size: 0.8em;">2</span>
+                            <span style="background: var(--color-green); color: #000; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; margin-right: 15px; font-weight: bold; font-size: 0.8em;">2</span>
                             Virtualisasi
                         </li>
                         <li style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center;">
-                            <span style="background: #f9e2af; color: #000; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; margin-right: 15px; font-weight: bold; font-size: 0.8em;">3</span>
+                            <span style="background: var(--color-yellow); color: #000; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; margin-right: 15px; font-weight: bold; font-size: 0.8em;">3</span>
                             Konkurensi & Persistensi
                         </li>
                         <li style="padding: 10px; display: flex; align-items: center;">
-                            <span style="background: #f38ba8; color: #000; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; margin-right: 15px; font-weight: bold; font-size: 0.8em;">4</span>
+                            <span style="background: var(--color-red); color: #000; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; margin-right: 15px; font-weight: bold; font-size: 0.8em;">4</span>
                             Desain & Sejarah
                         </li>
                     </ul>
@@ -76,19 +98,19 @@
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <div class="glass-card" style="padding: 1rem;">
-                        <h4 style="color: #fab387; font-size: 0.9em;">01. Fundamental</h4>
+                        <h4 style="color: var(--color-peach); font-size: 0.9em;">01. Fundamental</h4>
                         <p style="font-size: 0.8em; margin: 0;">Memahami peran Sistem Operasi sebagai <strong>Resource Manager</strong>.</p>
                     </div>
                     <div class="glass-card" style="padding: 1rem;">
-                        <h4 style="color: #a6e3a1; font-size: 0.9em;">02. Virtualisasi</h4>
+                        <h4 style="color: var(--color-green); font-size: 0.9em;">02. Virtualisasi</h4>
                         <p style="font-size: 0.8em; margin: 0;">Menjelaskan konsep virtualisasi pada <strong>CPU</strong> dan <strong>Memori</strong>.</p>
                     </div>
                     <div class="glass-card" style="padding: 1rem;">
-                        <h4 style="color: #f9e2af; font-size: 0.9em;">03. Konkurensi & Data</h4>
+                        <h4 style="color: var(--color-yellow); font-size: 0.9em;">03. Konkurensi & Data</h4>
                         <p style="font-size: 0.8em; margin: 0;">Mengidentifikasi tantangan konkurensi dan <strong>persistensi data</strong>.</p>
                     </div>
                     <div class="glass-card" style="padding: 1rem;">
-                        <h4 style="color: #f38ba8; font-size: 0.9em;">04. Sejarah</h4>
+                        <h4 style="color: var(--color-red); font-size: 0.9em;">04. Sejarah</h4>
                         <p style="font-size: 0.8em; margin: 0;">Mengenal <strong>evolusi</strong> Sistem Operasi dari masa ke masa.</p>
                     </div>
                 </div>
@@ -130,19 +152,19 @@
                     Bagaimana cara kita <span class="text-accent">memvirtualisasi sumber daya</span> agar sistem mudah digunakan, efisien, dan aman?
                 </div>
                 
-                <h4 class="text-muted" style="margin-top: 20px; font-size: 0.9em;">Mengapa perlu virtualisasi?</h4>
-                <div style="display: flex; gap: 15px; margin-top: 15px;">
-                    <div style="flex: 1; text-align: center; padding: 15px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
-                        <div style="font-size: 1.5em; margin-bottom: 5px;">🚀</div>
-                        <div style="font-size: 0.7em;">Multitasking program berjalan bersamaan</div>
+                <h4 class="text-muted" style="margin-top: 10px; font-size: 0.85em;">Mengapa perlu virtualisasi?</h4>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <div style="flex: 1; text-align: center; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+                        <div style="font-size: 1.2em; margin-bottom: 5px;">🚀</div>
+                        <div style="font-size: 0.65em;">Multitasking program berjalan bersamaan</div>
                     </div>
-                    <div style="flex: 1; text-align: center; padding: 15px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
-                        <div style="font-size: 1.5em; margin-bottom: 5px;">🛡️</div>
-                        <div style="font-size: 0.7em;">Isolasi agar tidak saling ganggu</div>
+                    <div style="flex: 1; text-align: center; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+                        <div style="font-size: 1.2em; margin-bottom: 5px;">🛡️</div>
+                        <div style="font-size: 0.65em;">Isolasi agar tidak saling ganggu</div>
                     </div>
-                    <div style="flex: 1; text-align: center; padding: 15px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
-                        <div style="font-size: 1.5em; margin-bottom: 5px;">👍</div>
-                        <div style="font-size: 0.7em;">Kemudahan bagi pengguna</div>
+                    <div style="flex: 1; text-align: center; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+                        <div style="font-size: 1.2em; margin-bottom: 5px;">👍</div>
+                        <div style="font-size: 0.65em;">Kemudahan bagi pengguna</div>
                     </div>
                 </div>
             </section>
@@ -150,23 +172,23 @@
             <!-- SLIDE 8: DEFINITION -->
             <section class="text-left">
                 <h3>Apa itu Sistem Operasi?</h3>
-                <div class="block">
+                <div class="block" style="margin: 0.5rem 0; padding: 0.8rem;">
                     <h4>Definisi Sederhana</h4>
                     Sistem Operasi (OS) adalah <span class="text-accent">Manajer Sumber Daya</span> yang mengatur CPU, Memori, dan Disk.
                 </div>
                 
-                <div class="two-columns">
+                <div class="two-columns" style="align-items: center;">
                     <div>
-                        <p style="font-size: 0.85em;">OS menyediakan "tombol ajaib" (system calls) untuk aplikasi.</p>
-                        <p class="text-muted" style="font-size: 0.8em;">Tugas Utama:</p>
-                        <ol style="font-size: 0.8em;">
+                        <p style="font-size: 0.8em; margin-bottom: 0.5rem;">OS menyediakan "tombol ajaib" (system calls) untuk aplikasi.</p>
+                        <p class="text-muted" style="font-size: 0.75em; margin-bottom: 0.2rem;">Tugas Utama:</p>
+                        <ol style="font-size: 0.75em; margin-left: 1.2em;">
                             <li>Memastikan sistem beroperasi <strong>benar</strong>.</li>
                             <li>Menjalankan program dengan <strong>efisien</strong>.</li>
                             <li>Abstraksi hardware yang <strong>rumit</strong>.</li>
                         </ol>
                     </div>
                     <div style="display: flex; justify-content: center; align-items: center;">
-                        <div style="font-size: 6em; opacity: 0.2;">⚙️</div>
+                        <div style="font-size: 4em; opacity: 0.2;">⚙️</div>
                     </div>
                 </div>
             </section>
@@ -180,9 +202,9 @@
                     Tiba-tiba datang <strong>3 Pesanan (Process)</strong>: Nasi Goreng, Sup, Telur.</p>
                 </div>
                 
-                <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px;">
-                    <h4 class="text-primary" style="font-size: 0.9em;">Diskusikan (2 menit):</h4>
-                    <ul style="margin: 0; font-size: 0.8em;">
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 12px; margin-top: 10px;">
+                    <h4 class="text-primary" style="font-size: 0.85em; margin-bottom: 5px;">Diskusikan (2 menit):</h4>
+                    <ul style="margin: 0; font-size: 0.75em; padding-left: 20px;">
                         <li>Bagaimana strategi koki agar semua pelanggan merasa dilayani cepat?</li>
                         <li>Apa yang terjadi jika koki mengerjakan satu pesanan sampai selesai baru pindah?</li>
                     </ul>
@@ -225,11 +247,11 @@
                 
                 <div class="two-columns">
                     <div class="glass-card" style="padding: 1rem;">
-                        <h4 style="color: #a6e3a1; font-size: 0.9em;">✅ Aman</h4>
+                        <h4 style="color: var(--color-green); font-size: 0.9em;">✅ Aman</h4>
                         <p style="font-size: 0.8em; margin: 0;">Program A tidak bisa mengacak-acak data Program B.</p>
                     </div>
                     <div class="glass-card" style="padding: 1rem;">
-                        <h4 style="color: #f9e2af; font-size: 0.9em;">✅ Mudah</h4>
+                        <h4 style="color: var(--color-yellow); font-size: 0.9em;">✅ Mudah</h4>
                         <p style="font-size: 0.8em; margin: 0;">Programmer tidak perlu mikirin alamat fisik RAM.</p>
                     </div>
                 </div>
@@ -257,11 +279,11 @@
                 <div class="code-block" style="background: #111; padding: 15px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.75em; border: 1px solid #333;">
                     <span style="color: #7f8497;">// Thread 1</span><br>
                     counter = counter + 1;<br>
-                    <span style="color: #f38ba8;">--- Context Switch ---</span><br>
+                    <span style="color: var(--color-red);">--- Context Switch ---</span><br>
                     <span style="color: #7f8497;">// Thread 2</span><br>
                     counter = counter + 1;<br>
                     <br>
-                    <span style="color: #a6e3a1;">Result?</span> Bisa jadi cuma nambah 1, bukan 2! 😱
+                    <span style="color: var(--color-green);">Result?</span> Bisa jadi cuma nambah 1, bukan 2! 😱
                 </div>
             </section>
 
@@ -329,17 +351,17 @@
                 <h3>Evolusi Sistem Operasi</h3>
                 <div style="position: relative; padding-left: 20px; border-left: 2px solid rgba(255,255,255,0.1); max-width: 700px; margin: 0 auto; text-align: left;">
                     <div style="margin-bottom: 20px;">
-                        <span style="background: #fab387; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; font-weight: bold;">1950s</span>
+                        <span style="background: var(--color-peach); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; font-weight: bold;">1950s</span>
                         <strong style="margin-left: 10px; font-size: 0.9em;">Human Operator</strong>
                         <p style="font-size: 0.75em; color: gray; margin-top: 3px;">Mainframe raksasa. Single user. Setup manual lama. CPU sering idle.</p>
                     </div>
                     <div style="margin-bottom: 20px;">
-                        <span style="background: #f9e2af; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; font-weight: bold;">1960s</span>
+                        <span style="background: var(--color-yellow); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; font-weight: bold;">1960s</span>
                         <strong style="margin-left: 10px; font-size: 0.9em;">Batch & Multiprogramming</strong>
                         <p style="font-size: 0.75em; color: gray; margin-top: 3px;">Batch jobs. Mulai load banyak program ke memori agar CPU sibuk.</p>
                     </div>
                     <div style="margin-bottom: 20px;">
-                        <span style="background: #a6e3a1; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; font-weight: bold;">1970s</span>
+                        <span style="background: var(--color-green); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; font-weight: bold;">1970s</span>
                         <strong style="margin-left: 10px; font-size: 0.9em;">Time Sharing & UNIX</strong>
                         <p style="font-size: 0.75em; color: gray; margin-top: 3px;">Interaktif! User merasa punya mesin sendiri. Lahirnya UNIX.</p>
                     </div>
@@ -351,12 +373,12 @@
                 <h3>Evolusi Sistem Operasi (Lanjutan)</h3>
                 <div style="position: relative; padding-left: 20px; border-left: 2px solid rgba(255,255,255,0.1); max-width: 700px; margin: 0 auto; text-align: left;">
                     <div style="margin-bottom: 20px;">
-                        <span style="background: #89b4fa; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; font-weight: bold;">1980s</span>
+                        <span style="background: var(--color-blue); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; font-weight: bold;">1980s</span>
                         <strong style="margin-left: 10px; font-size: 0.9em;">Personal Computer (PC)</strong>
                         <p style="font-size: 0.75em; color: gray; margin-top: 3px;">Komputer murah. GUI muncul (Mac/Windows). Awalnya fitur OS mundur (demi performa), lalu maju lagi.</p>
                     </div>
                     <div style="margin-bottom: 0px;">
-                        <span style="background: #cba6f7; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; font-weight: bold;">Now</span>
+                        <span style="background: var(--color-mauve); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; font-weight: bold;">Now</span>
                         <strong style="margin-left: 10px; font-size: 0.9em;">Mobile & Cloud</strong>
                         <p style="font-size: 0.75em; color: gray; margin-top: 3px;">Android/iOS (Power efficiency). Cloud/Virtualization (OS di atas OS).</p>
                     </div>
@@ -372,7 +394,7 @@
                 <h3>🖥️ Aktivitas: Evolusi GUI</h3>
                 <div class="glass-card" style="padding: 20px;">
                     <p style="font-size: 1em; font-weight: bold; margin-bottom: 15px;">Tugas Pengamatan</p>
-                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7em; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-bottom: 15px; color: #f38ba8;">
+                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7em; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-bottom: 15px; color: var(--color-red);">
                         Win98 -> 2000 -> XP -> Vista -> 7 -> 10 -> 11
                     </div>
                     <p style="font-size: 0.8em; text-align: left;">Cari gambar desktopnya, lalu diskusikan:</p>
@@ -387,7 +409,7 @@
 
             <!-- SLIDE 23: END -->
             <section data-background-gradient="linear-gradient(135deg, #1e1e2e, #11111b)">
-                <h1 style="font-size: 3.5em; color: #89b4fa;">Terima Kasih</h1>
+                <h1 style="font-size: 3.5em; color: var(--color-blue);">Terima Kasih</h1>
                 <p style="margin-top: 15px; font-size: 0.9em;">Ada Pertanyaan?</p>
                 <div style="margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; font-size: 0.7em; color: gray;">
                     Sistem Operasi IF25-12007
@@ -407,6 +429,8 @@
             hash: true,
             slideNumber: true,
             center: true,
+            width: 960,
+            height: 540,
             navigationMode: 'linear', 
             controlsLayout: 'edges',
             backgroundTransition: 'fade',
@@ -414,6 +438,17 @@
             plugins: [RevealMarkdown, RevealHighlight, RevealNotes, RevealZoom]
         });
     </script>
+    <script>
+        // PDF Download Logic
+        // Auto-print if param is present
+        if (window.location.search.includes('print-pdf')) {
+            // Wait for Reveal to be ready (ensure math/highlight etc loaded)
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    window.print();
+                }, 1500); // Give it a moment to render everything
+            });
+        }
+    </script>
 </body>
-
 </html>

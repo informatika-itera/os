@@ -1,0 +1,82 @@
+\chapter{Abstraksi: Proses}
+\vspace{1cm}
+
+Dalam bab ini, kita akan membahas salah satu abstraksi paling mendasar yang disediakan oleh OS untuk pengguna: \textbf{proses}. Definisi dari proses, secara informal, cukup sederhana: proses adalah \textbf{program yang sedang berjalan} (\textit{running program}). Program itu sendiri adalah hal yang mati: ia hanya diam di sana di disk, sekumpulan instruksi (dan mungkin beberapa data statis), menunggu untuk beraksi. Adalah sistem operasi yang mengambil byte-byte ini dan membuatnya berjalan, mengubah program menjadi sesuatu yang berguna.
+
+Seringkali terjadi bahwa pengguna ingin menjalankan lebih dari satu program sekaligus; misalnya, Anda mungkin ingin menjalankan browser web, klien email, pemutar musik, dan sebagainya pada saat yang bersamaan. Bahkan dalam sistem yang hanya memiliki satu CPU fisik, OS menciptakan ilusi bahwa ada banyak CPU virtual, sehingga memungkinkan semua program ini berjalan seolah-olah mereka memiliki prosesor mereka sendiri. Teknik ini disebut \textbf{virtualisasi} CPU (atau \textit{time sharing}), dan ini adalah fokus utama dari bagian pertama buku ini.
+
+Untuk mengimplementasikan virtualisasi CPU, dan melakukannya dengan baik, OS memerlukan dukungan tingkat rendah dari perangkat keras (misalnya, mekanisme untuk beralih antar proses) serta beberapa kebijakan tingkat tinggi untuk membuat keputusan cerdas (misalnya, proses mana yang harus dijalankan selanjutnya?).
+
+\begin{asidebox}{INTI MASALAH: \\ BAGAIMANA MENYEDIAKAN ILUSI BANYAK CPU?}
+Bagaimana OS menyediakan ilusi dari banyak CPU? Meskipun hanya ada sedikit CPU fisik yang tersedia, bagaimana OS dapat memberikan ilusi bahwa ada jumlah CPU virtual yang hampir tak terbatas?
+\end{asidebox}
+
+Jawabannya, seperti yang akan kita lihat, adalah dengan memvirtualisasi CPU. Dengan menjalankan satu proses, lalu menghentikannya dan menjalankan yang lain, dan seterusnya, OS dapat mempromosikan ilusi bahwa ada banyak CPU virtual yang ada ketika pada kenyataannya hanya ada satu (atau beberapa) CPU fisik.
+
+\section{Abstraksi: Sebuah Proses}
+Untuk memahami apa yang membentuk sebuah proses, kita harus memahami \textbf{state mesin} (\textit{machine state}): apa yang dapat dibaca atau diperbarui oleh program saat sedang berjalan. Pada waktu tertentu, bagian mana dari mesin yang penting bagi eksekusi program ini?
+
+Salah satu komponen jelas dari state mesin adalah \textbf{memori}. Instruksi terletak di memori; data yang dibaca atau ditulis oleh program yang sedang berjalan juga ada di memori. Jadi \textbf{ruang alamat} (\textit{address space}) yang dapat diakses oleh proses adalah bagian dari proses tersebut.
+
+Bagian lain dari state mesin adalah \textbf{register}. Banyak instruksi secara eksplisit membaca atau memperbarui register; oleh karena itu, mereka jelas penting bagi eksekusi proses. Perhatikan bahwa ada beberapa register khusus yang membentuk bagian dari state mesin ini. Misalnya, \textbf{program counter} (PC) (kadang-kadang disebut \textit{instruction pointer} atau IP) memberi tahu kita instruksi mana dari program yang akan dieksekusi selanjutnya; demikian pula \textbf{stack pointer} dan \textbf{frame pointer} terkait digunakan untuk mengelola tumpukan (\textit{stack}) fungsi parameter, variabel lokal, dan alamat pengembalian.
+
+Akhirnya, program sering mengakses informasi persisten yang disimpan dalam perangkat I/O juga. Daftar file yang saat ini dibuka oleh proses, misalnya, juga merupakan bagian dari proses.
+
+\section{API Proses}
+Hampir semua sistem operasi modern menyediakan antarmuka dasar yang sama untuk melakukan hal-hal terkait proses:
+
+\begin{itemize}
+    \item \textbf{Create}: Harus ada metode untuk membuat proses baru. Ketika Anda mengetik perintah ke dalam shell, atau mengklik ganda ikon aplikasi, OS dipanggil untuk membuat proses baru untuk menjalankan program yang Anda indikasikan.
+    \item \textbf{Destroy}: Karena ada antarmuka untuk pembuatan proses, harus ada juga antarmuka untuk menghancurkannya secara paksa. Tentu saja, banyak proses akan berjalan dan keluar dengan sendirinya ketika selesai; namun, ketika mereka tidak (mis., bug, loop tak terbatas), pengguna mungkin ingin mematikannya.
+    \item \textbf{Wait}: Kadang-kadang berguna untuk menunggu proses berhenti berjalan, jadi beberapa jenis antarmuka tunggu sering disediakan.
+    \item \textbf{Miscellaneous Control}: Selain membunuh atau menunggu proses, ada kontrol lain yang mungkin berguna. Misalnya, sebagian besar sistem operasi menyediakan semacam metode untuk menangguhkan proses (menghentikannya berjalan untuk sementara waktu) dan kemudian melanjutkannya (melanjutkannya berjalan).
+    \item \textbf{Status}: Biasanya ada antarmuka untuk mendapatkan beberapa informasi status tentang proses juga, seperti berapa lama proses telah berjalan, atau dalam keadaan apa proses itu sekarang.
+\end{itemize}
+
+\section{Pembuatan Proses: Lebih Detail}
+Satu misteri kecil adalah bagaimana program diubah menjadi proses. Secara khusus, bagaimana OS mengambil data program (kode dan data statis) yang ada di disk dan membuatnya berjalan?
+
+Hal pertama yang harus dilakukan OS untuk menjalankan program adalah \textbf{memuat} (\textit{load}) kode dan data statis apa pun (mis., variabel yang diinisialisasi) ke dalam memori, ke dalam ruang alamat proses. Program awalnya berada di disk (atau, dalam beberapa sistem modern, flash-based SSD) dalam beberapa jenis format yang dapat dieksekusi.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/2_fromprogtoproc.png}
+\caption{Memuat: Dari Program Ke Proses}
+\label{fig:fromprogtoproc}
+\end{figure}
+
+
+Setelah kode dan data statis dimuat ke dalam memori, ada beberapa hal lain yang perlu dilakukan OS sebelum menjalankan proses. Sejumlah memori harus dialokasikan untuk \textbf{stack} (tumpukan) run-time program. OS juga mungkin mengalokasikan memori untuk \textbf{heap} program. Heap digunakan untuk data yang diminta secara eksplisit secara dinamis (malloc() dalam C, atau new dalam C++ atau Java).
+
+OS juga akan melakukan beberapa tugas inisialisasi lainnya, terutama terkait dengan input/output (I/O). Misalnya, dalam sistem UNIX, setiap proses secara default memiliki tiga deskriptor file terbuka, untuk input standar, output standar, dan kesalahan standar.
+
+Akhirnya, OS menyelesaikan pengaturan program dan melompat ke rutinitas \texttt{main()}. Dengan melompat ke \texttt{main()}, OS mentransfer kendali CPU ke proses yang baru dibuat, dan dengan demikian program mulai dieksekusi.
+
+\section{State Proses}
+Sekarang kita memiliki gagasan tentang apa itu proses, dan bagaimana proses itu dibuat, mari kita bicara tentang berbagai \textbf{keadaan} (\textit{states}) yang dapat dialami proses pada waktu tertentu. Gagasan awalnya sederhana. Dalam model yang disederhanakan, sebuah proses dapat berada dalam satu dari tiga keadaan:
+
+\begin{itemize}
+    \item \textbf{Running} (Berjalan): Dalam keadaan berjalan, proses sedang berjalan di prosesor. Ini berarti proses sedang mengeksekusi instruksi.
+    \item \textbf{Ready} (Siap): Dalam keadaan siap, proses siap dijalankan tetapi karena alasan tertentu OS telah memilih untuk tidak menjalankannya pada saat ini.
+    \item \textbf{Blocked} (Terblokir): Dalam keadaan terblokir, proses telah melakukan beberapa jenis operasi yang membuatnya tidak siap untuk berjalan sampai beberapa peristiwa lain terjadi. Contoh umum: ketika proses memulai I/O ke disk, ia menjadi terblokir dan dengan demikian proses lain dapat menggunakan prosesor.
+\end{itemize}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/2_state.png}
+\caption{Proses: Transisi State}
+\label{fig:processstate}
+\end{figure}
+
+
+Penjadwalan transisi antar keadaan ini adalah inti dari pekerjaan OS.
+
+\section{Struktur Data}
+OS adalah program, dan seperti program lainnya, OS memiliki beberapa struktur data kunci yang melacak berbagai bagian informasi yang relevan. Untuk melacak keadaan setiap proses, misalnya, OS kemungkinan akan menyimpan semacam \textbf{daftar proses} (\textit{process list}) untuk semua proses yang siap dan beberapa informasi tambahan untuk melacak proses mana yang sedang berjalan. OS juga harus memiliki cara untuk melacak proses yang diblokir.
+
+Mungkin struktur data yang paling penting adalah \textbf{blok kontrol proses} (\textit{Process Control Block} atau \textbf{PCB}), yang berisi informasi tentang setiap proses. PCB akan menyimpan register proses (isi prosesor) ketika proses tidak berjalan, sehingga ketika OS melanjutkan proses tersebut, OS dapat memuat kembali register-register ini dan melanjutkan eksekusi seolah-olah proses tidak pernah dihentikan.
+
+Struktur data ini memungkinkan OS untuk dengan anggun menangani banyak proses sekaligus, menyimpan dan memulihkan keadaan mereka sesuai kebutuhan untuk menciptakan ilusi konkurensi.
+
+\section{Ringkasan}
+Dalam bab ini, kita telah memperkenalkan abstraksi paling dasar dari OS: proses. Ini cukup sederhana: itu hanya program yang sedang berjalan. Namun, untuk mengimplementasikan proses, OS harus melakukan banyak hal: memuat kode program ke dalam memori, menangani setup stack dan heap, dan melakukan tugas-tugas terkait lainnya. OS juga harus mengelola keadaan proses dan beralih di antara mereka untuk memvirtualisasi CPU. Di bab-bab selanjutnya, kita akan melihat lebih dalam mekanisme dasar yang memungkinkan hal ini terjadi.
