@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>Chapter 0: Review Arsitektur Komputer</title>
+    <meta name="description" content="Week 1: Review Arsitektur Komputer">
+    <meta name="author" content="lectura.id/course/os">
+
+    <link rel="stylesheet" href="dist/reset.css">
+    <link rel="stylesheet" href="dist/reveal.css">
+    <!-- Theme handled by script below -->
+    <link rel="stylesheet" href="css/os-theme.css"> <!-- Custom Theme Refinements -->
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Theme used for syntax highlighting of code -->
+    <link rel="stylesheet" href="plugin/highlight/atom-one-dark.css">
+
+    <script>
+        // Apply saved theme immediately to prevent flash
+        const urlParams = new URLSearchParams(window.location.search);
+        const forceLight = urlParams.get('theme') === 'light';
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+
+        if (forceLight || savedTheme === 'light') {
+            document.write('<link rel="stylesheet" href="dist/theme/white.css" id="theme">');
+            document.documentElement.classList.add('theme-light');
+        } else {
+            document.write('<link rel="stylesheet" href="dist/theme/black.css" id="theme">');
+        }
+    </script>
+</head>
+
+<body>
+
+    <!-- Back Button -->
+    <div style="position: fixed; top: 20px; left: 20px; z-index: 9999;">
+        <a href="index.html" style="color: var(--text-main); text-decoration: none; background: var(--glass-bg); padding: 10px 15px; border-radius: 8px; backdrop-filter: blur(5px); font-family: 'Outfit', sans-serif; font-size: 0.9em; border: 1px solid var(--glass-border); display: flex; align-items: center; gap: 8px; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            Back to Home
+        </a>
+    </div>
+
+    <div class="reveal">
+        <div class="slides">
+
+            <!-- SLIDE 1: TITLE -->
+            <section data-background-gradient="linear-gradient(135deg, #1e1e2e, #11111b)">
+                <div class="glass-card" style="display: inline-block; padding: 40px 60px;">
+                    <img src="assets/images/Logo.png" alt="Logo" style="height: 100px; background: transparent; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));" class="demo-logo">
+                    <h2 style="font-size: 2.5em; margin: 10px 0;">Review Arsitektur Komputer</h2>
+                    <h4 style="margin-bottom: 20px; text-align: center;">Week 1: Pre-requisite</h4>
+                    
+                    <div class="author-box">
+                        <p style="margin: 5px 0;"><strong style="color: var(--color-blue);">lectura.id/course/os</strong></p>
+                        <p style="margin: 5px 0;">Program Studi Teknik Informatika | Institut Teknologi Sumatera</p>
+                        <p style="margin: 10px 0 0 0; color: #a6adc8; font-family: 'JetBrains Mono', monospace;">2026</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 2: OUTLINE -->
+            <section>
+                <h3>Outline Materi</h3>
+                <div class="glass-card text-left" style="max-width: 600px; margin: 0 auto;">
+                    <ul style="list-style-type: none; padding: 0; margin: 0;">
+                        <li style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center;">
+                            <span style="background: var(--primary-color); color: #000; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; margin-right: 15px; font-weight: bold; font-size: 0.8em;">1</span>
+                            Arsitektur vs Organisasi
+                        </li>
+                        <li style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center;">
+                            <span style="background: var(--color-green); color: #000; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; margin-right: 15px; font-weight: bold; font-size: 0.8em;">2</span>
+                            Von Neumann Architecture
+                        </li>
+                        <li style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center;">
+                            <span style="background: var(--color-yellow); color: #000; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; margin-right: 15px; font-weight: bold; font-size: 0.8em;">3</span>
+                            Siklus Instruksi & Memori
+                        </li>
+                        <li style="padding: 10px; display: flex; align-items: center;">
+                            <span style="background: var(--color-red); color: #000; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; margin-right: 15px; font-weight: bold; font-size: 0.8em;">4</span>
+                            Relevansi dengan OS
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+             <!-- SLIDE 3: SECTION HEADER 1 -->
+             <section data-background-gradient="linear-gradient(45deg, #1e1e2e, #313244)">
+                <h1 style="font-size: 4em; opacity: 0.1; position: absolute; top: -80px; left: 0px;">01</h1>
+                <div style="position: relative; z-index: 2;">
+                    <h1>Basic Concept</h1>
+                    <p class="text-muted">Architecture vs Organization</p>
+                </div>
+            </section>
+
+            <!-- SLIDE 4: ARCH VS ORG -->
+            <section class="text-left">
+                <h3>Arsitektur vs Organisasi</h3>
+                <div class="two-columns">
+                    <div class="glass-card" style="padding: 1rem;">
+                        <h4 style="color: var(--color-blue); font-size: 0.9em;">Arsitektur</h4>
+                        <p style="font-size: 0.8em; margin: 0;">Apa yang <strong>terlihat</strong> oleh programmer (set instruksi, jumlah bit data, mekanisme I/O).</p>
+                        <p style="font-size: 0.7em; color: gray; margin-top: 10px;">Ex: x86, ARM, RISC-V</p>
+                    </div>
+                    <div class="glass-card" style="padding: 1rem;">
+                        <h4 style="color: var(--color-mauve); font-size: 0.9em;">Organisasi</h4>
+                        <p style="font-size: 0.8em; margin: 0;">Bagaimana fitur tersebut <strong>diimplementasikan</strong> secara hardware (sinyal kontrol, teknologi memori).</p>
+                        <p style="font-size: 0.7em; color: gray; margin-top: 10px;">Ex: Cache L1 size, Clock speed</p>
+                    </div>
+                </div>
+                <div class="alert-block" style="margin-top: 20px;">
+                    <h4>Konteks OS</h4>
+                    Sistem Operasi harus paham keduanya untuk mengelola resource secara efisien dan menyediakan abstraksi yang tepat.
+                </div>
+            </section>
+
+            <!-- SLIDE 5: SECTION HEADER 2 -->
+             <section data-background-gradient="linear-gradient(45deg, #1e1e2e, #313244)">
+                <h1 style="font-size: 4em; opacity: 0.1; position: absolute; top: -80px; left: 0px;">02</h1>
+                <div style="position: relative; z-index: 2;">
+                    <h1>Von Neumann</h1>
+                    <p class="text-muted">The Stored Program Concept</p>
+                </div>
+            </section>
+
+            <!-- SLIDE 6: VON NEUMANN DIAGRAM -->
+            <section>
+                <h3>Arsitektur Von Neumann</h3>
+                <!-- Container for 80% scale -->
+                <div style="transform: scale(0.8); transform-origin: center top; margin-top: -20px;">
+                    <div style="background: white; padding: 20px; border-radius: 10px; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                        <!-- Simple SVG Diagram for Von Neumann -->
+                        <svg width="600" height="300" viewBox="0 0 600 300">
+                            <!-- CPU -->
+                            <rect x="50" y="50" width="200" height="200" fill="#e0e7ff" stroke="#2563eb" stroke-width="2"/>
+                            <text x="150" y="80" text-anchor="middle" font-family="sans-serif" font-weight="bold" fill="#1e40af">CPU</text>
+                            
+                            <!-- CU -->
+                            <rect x="70" y="100" width="160" height="60" fill="#bfdbfe" stroke="#2563eb" stroke-width="1"/>
+                            <text x="150" y="135" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#1e3a8a">Control Unit</text>
+
+                            <!-- ALU -->
+                            <rect x="70" y="170" width="160" height="60" fill="#bfdbfe" stroke="#2563eb" stroke-width="1"/>
+                            <text x="150" y="205" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#1e3a8a">ALU</text>
+
+                            <!-- Bus -->
+                            <path d="M 250 150 L 350 150" stroke="#64748b" stroke-width="4" marker-end="url(#arrow)" />
+                            <path d="M 350 150 L 250 150" stroke="#64748b" stroke-width="4" marker-end="url(#arrow)" />
+
+                            <!-- Memory -->
+                            <rect x="350" y="50" width="150" height="200" fill="#dcfce7" stroke="#10b981" stroke-width="2"/>
+                            <text x="425" y="150" text-anchor="middle" font-family="sans-serif" font-weight="bold" fill="#047857">Memory</text>
+                            <text x="425" y="170" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#065f46">(Instructions + Data)</text>
+
+                            <!-- Definitions -->
+                            <defs>
+                                <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                                    <path d="M0,0 L0,6 L9,3 z" fill="#64748b" />
+                                </marker>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div class="block" style="margin-top: 30px; max-width: 700px; margin-left: auto; margin-right: auto;">
+                        <h4>Konsep Kunci</h4>
+                        Data dan Instruksi program disimpan di memori yang sama (<span class="text-accent">Stored Program Concept</span>).
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 7: INSTRUCTION CYCLE -->
+            <section class="text-left">
+                <h3>Siklus Eksekusi (The Giant Loop)</h3>
+                <p class="text-muted">CPU bekerja dalam loop yang tak henti:</p>
+                
+                <div style="display: flex; gap: 20px; align-items: stretch; margin-top: 20px;">
+                    <div class="glass-card" style="flex: 1; text-align: center; padding: 20px;">
+                        <h1 style="color: var(--color-blue);">1</h1>
+                        <h4>Fetch</h4>
+                        <p style="font-size: 0.7em;">Ambil instruksi dari memori (berdasarkan Program Counter).</p>
+                    </div>
+                    <div class="glass-card" style="flex: 1; text-align: center; padding: 20px;">
+                        <h1 style="color: var(--color-yellow);">2</h1>
+                        <h4>Decode</h4>
+                        <p style="font-size: 0.7em;">Terjemahkan instruksi. Apa yang harus dilakukan?</p>
+                    </div>
+                    <div class="glass-card" style="flex: 1; text-align: center; padding: 20px;">
+                        <h1 style="color: var(--color-green);">3</h1>
+                        <h4>Execute</h4>
+                        <p style="font-size: 0.7em;">Jalankan! (Bisa baca/tulis memori, hitung matematika, lompat ke instruksi lain).</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- SLIDE 8: MEMORY HIERARCHY -->
+            <section class="text-left">
+                <h3>Hierarki Memori</h3>
+                <p class="text-muted" style="font-size: 0.8em;">Trade-off: Kecepatan vs Kapasitas vs Harga</p>
+                
+                <div style="width: 80%; margin: 0 auto; position: relative;">
+                    <!-- Pyramid Representation using divs -->
+                    <div style="background: var(--color-red); clip-path: polygon(50% 0, 100% 100%, 0% 100%); width: 200px; height: 50px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 0.8em; font-weight: bold; color: black;">Registers</div>
+                    <div style="background: var(--color-peach); width: 250px; height: 50px; margin: 5px auto 0; display: flex; align-items: center; justify-content: center; font-size: 0.8em; font-weight: bold; color: black; border-radius: 4px;">L1/L2/L3 Cache</div>
+                    <div style="background: var(--color-yellow); width: 350px; height: 60px; margin: 5px auto 0; display: flex; align-items: center; justify-content: center; font-size: 0.8em; font-weight: bold; color: black; border-radius: 4px;">Main Memory (RAM)</div>
+                    <div style="background: var(--color-blue); width: 450px; height: 70px; margin: 5px auto 0; display: flex; align-items: center; justify-content: center; font-size: 0.8em; font-weight: bold; color: black; border-radius: 4px;">Storage (SSD/HDD)</div>
+                </div>
+
+                <div class="alert-block" style="margin-top: 20px; font-size: 0.8em;">
+                    <strong>OS Role:</strong> Mengelola perpindahan data antar level ini (Caching, Virtual Memory) agar user merasa memori "cepat dan besar".
+                </div>
+            </section>
+
+             <!-- SLIDE 9: RELEVANCE -->
+             <section class="text-left">
+                <h3>Mengapa OS Peduli?</h3>
+                <ul style="font-size: 0.9em; margin-top: 20px;">
+                    <li style="margin-bottom: 15px;">
+                        <strong>Interrupts</strong>: CPU tidak bisa terus-terusan nge-cek I/O (polling). Device mengirim sinyal "Interrupt" ke CPU saat selesai. OS harus menangani ini.
+                    </li>
+                    <li style="margin-bottom: 15px;">
+                        <strong>Protection</strong>: User mode vs Kernel mode. OS menggunakan fitur hardware untuk mencegah program mengakses memori program lain.
+                    </li>
+                    <li style="margin-bottom: 15px;">
+                        <strong>DMA (Direct Memory Access)</strong>: Hardware kusus untuk transfer data Disk <-> RAM tanpa membebani CPU. OS yang mengatur transfernya.
+                    </li>
+                </ul>
+            </section>
+
+            <!-- SLIDE 10: END -->
+            <section data-background-gradient="linear-gradient(135deg, #1e1e2e, #11111b)">
+                <h1 style="font-size: 3.5em; color: var(--color-blue);">Selesai</h1>
+                <p style="margin-top: 15px; font-size: 0.9em;">Lanjut ke Chapter 1: Pengenalan OS</p>
+                <a href="chapter1.html" class="navigate-link" style="margin-top: 30px; display: inline-block; padding: 10px 20px; background: rgba(255,255,255,0.1); border-radius: 8px; color: white; text-decoration: none; border: 1px solid rgba(255,255,255,0.2);">
+                    Ke Chapter 1 &rarr;
+                </a>
+            </section>
+
+        </div>
+    </div>
+
+    <script src="dist/reveal.js"></script>
+    <script src="plugin/notes/notes.js"></script>
+    <script src="plugin/markdown/markdown.js"></script>
+    <script src="plugin/highlight/highlight.js"></script>
+    <script src="plugin/zoom/zoom.js"></script>
+    <script>
+        Reveal.initialize({
+            hash: true,
+            slideNumber: true,
+            center: true,
+            width: 960,
+            height: 540,
+            navigationMode: 'linear', 
+            controlsLayout: 'edges',
+            backgroundTransition: 'fade',
+            transition: 'slide', 
+            plugins: [RevealMarkdown, RevealHighlight, RevealNotes, RevealZoom]
+        });
+    </script>
+    <script>
+        // PDF Download Logic
+        if (window.location.search.includes('print-pdf')) {
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    window.print();
+                }, 1500); 
+            });
+        }
+    </script>
+</body>
+</html>
