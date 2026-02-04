@@ -1,0 +1,7 @@
+\beamer@sectionintoc {1}{Komponen Dasar Komputer}{5}{0}{1}
+\beamer@sectionintoc {2}{Input/Output dan Periferal}{14}{0}{2}
+\beamer@sectionintoc {3}{Bus: Jalur Komunikasi}{20}{0}{3}
+\beamer@sectionintoc {4}{Arsitektur vs Organisasi}{25}{0}{4}
+\beamer@sectionintoc {5}{Von Neumann}{29}{0}{5}
+\beamer@sectionintoc {6}{Siklus Instruksi}{34}{0}{6}
+\beamer@sectionintoc {7}{Hierarki Memori}{39}{0}{7}
