@@ -1,0 +1,150 @@
+\chapter{Antarmuka API Proses}
+\vspace{1cm}
+
+Pada bab sebelumnya, kita membahas abstraksi proses dan bagaimana OS menciptakan ilusi banyak CPU. Pada bab ini, fokus kita adalah antarmuka pemrograman yang digunakan aplikasi untuk berinteraksi dengan proses di sistem UNIX: bagaimana proses dibuat, bagaimana proses menunggu proses lain, dan bagaimana program baru dijalankan dalam ruang proses yang sudah ada.
+
+Secara praktis, ada tiga system call yang menjadi fondasi API proses:
+\begin{itemize}
+    \item \texttt{fork()} untuk membuat proses baru,
+    \item \texttt{wait()} / \texttt{waitpid()} untuk menunggu proses anak selesai,
+    \item \texttt{exec()} (keluarga \texttt{exec}) untuk mengganti citra program yang sedang berjalan.
+\end{itemize}
+
+\begin{asidebox}{INTI MASALAH: \\ BAGAIMANA PROGRAM MEMBUAT DAN MENGELOLA PROSES?}
+Jika proses adalah abstraksi utama untuk virtualisasi CPU, maka bagaimana aplikasi benar-benar membuat proses baru? Bagaimana hubungan induk--anak dibentuk? Bagaimana sinkronisasi dilakukan agar proses induk tahu kapan anak selesai? Dan bagaimana proses memulai program yang berbeda tanpa membuat proses dari nol?
+\end{asidebox}
+
+\section{System Call \texttt{fork()}}
+\texttt{fork()} membuat salinan proses pemanggil. Setelah pemanggilan berhasil, akan ada \textbf{dua} proses yang melanjutkan eksekusi dari baris setelah \texttt{fork()}: proses induk (\textit{parent}) dan proses anak (\textit{child}).
+
+Perilaku kunci dari \texttt{fork()} adalah nilai kembaliannya:
+\begin{itemize}
+    \item Pada proses \textit{child}, nilai kembali \texttt{fork()} adalah 0.
+    \item Pada proses \textit{parent}, nilai kembali \texttt{fork()} adalah PID anak (bilangan positif).
+    \item Jika gagal, \texttt{fork()} mengembalikan nilai negatif.
+\end{itemize}
+
+\begin{lstlisting}[language=C, caption={Contoh dasar penggunaan \texttt{fork()}}, label={lst:fork-basic}]
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+int main(void) {
+    printf("halo (pid:%d)\n", (int)getpid());
+
+    int rc = fork();
+    if (rc < 0) {
+        fprintf(stderr, "fork gagal\n");
+        exit(1);
+    } else if (rc == 0) {
+        printf("saya child (pid:%d)\n", (int)getpid());
+    } else {
+        printf("saya parent dari child %d (pid:%d)\n", rc, (int)getpid());
+    }
+
+    return 0;
+}
+\end{lstlisting}
+
+Karena parent dan child berjalan secara konkuren, urutan keluaran keduanya tidak dijamin sama di setiap eksekusi. Inilah contoh awal bahwa \textbf{penjadwal OS} menentukan siapa yang mendapat CPU lebih dulu.
+
+\section{Ruang Alamat Setelah \texttt{fork()}}
+Meskipun \texttt{fork()} terlihat seperti menyalin seluruh proses, implementasi modern biasanya menggunakan teknik \textit{copy-on-write} agar efisien. Secara semantik, parent dan child memiliki ruang alamat terpisah: perubahan variabel di child tidak mengubah salinan variabel di parent, dan sebaliknya.
+
+\begin{lstlisting}[language=C, caption={Variabel yang tampak sama tetapi hidup di proses berbeda}, label={lst:fork-memory}]
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+int x = 100;
+
+int main(void) {
+    int rc = fork();
+    if (rc < 0) {
+        exit(1);
+    } else if (rc == 0) {
+        x = 200;
+        printf("child: x=%d (pid:%d)\n", x, (int)getpid());
+    } else {
+        x = 300;
+        printf("parent: x=%d (pid:%d)\n", x, (int)getpid());
+    }
+    return 0;
+}
+\end{lstlisting}
+
+Kode di atas menegaskan bahwa proses adalah unit isolasi: masing-masing memiliki konteks eksekusi sendiri (register, ruang alamat, status file, dan metadata proses).
+
+\section{System Call \texttt{wait()} dan \texttt{waitpid()}}
+Sering kali parent perlu menunggu child selesai sebelum melanjutkan. Untuk itu, UNIX menyediakan \texttt{wait()} atau \texttt{waitpid()}.
+
+\begin{lstlisting}[language=C, caption={Parent menunggu child selesai}, label={lst:wait}]
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+int main(void) {
+    int rc = fork();
+    if (rc < 0) {
+        exit(1);
+    } else if (rc == 0) {
+        printf("child berjalan (pid:%d)\n", (int)getpid());
+    } else {
+        int wc = wait(NULL);
+        printf("parent (pid:%d): child %d selesai\n", (int)getpid(), wc);
+    }
+    return 0;
+}
+\end{lstlisting}
+
+Dengan \texttt{wait()}, parent diblokir sampai salah satu child selesai. Ini adalah pola sinkronisasi sederhana tetapi sangat umum, misalnya pada shell ketika menjalankan program di mode \textit{foreground}.
+
+\section{System Call Keluarga \texttt{exec()}}
+\texttt{fork()} membuat proses baru yang awalnya mengeksekusi kode yang sama dengan parent. Namun, pada banyak kasus kita ingin child menjalankan program \textbf{lain}. Di sinilah \texttt{exec()} digunakan.
+
+Keluarga \texttt{exec} (misalnya \texttt{execl()}, \texttt{execvp()}) \textbf{mengganti} citra proses saat ini dengan program baru. Jika berhasil, kode lama tidak dilanjutkan.
+
+\begin{lstlisting}[language=C, caption={Menggabungkan \texttt{fork()} dan \texttt{execvp()}}, label={lst:exec}]
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main(void) {
+    int rc = fork();
+    if (rc < 0) {
+        exit(1);
+    } else if (rc == 0) {
+        char *myargs[3];
+        myargs[0] = "wc";
+        myargs[1] = "chapter3-book-translate.tex";
+        myargs[2] = NULL;
+        execvp(myargs[0], myargs);
+        printf("baris ini tidak tercetak jika exec berhasil\n");
+    } else {
+        wait(NULL);
+        printf("parent: child selesai\n");
+    }
+    return 0;
+}
+\end{lstlisting}
+
+Pola \texttt{fork()} lalu \texttt{exec()} adalah dasar implementasi shell UNIX. Shell membuat child, child memanggil \texttt{exec()}, lalu parent menunggu (atau tidak menunggu untuk \textit{background job}).
+
+\section{Mengapa API Proses Dirancang Seperti Ini?}
+Desain ini terkenal karena sederhana namun sangat fleksibel:
+\begin{itemize}
+    \item \texttt{fork()} memisahkan langkah \textit{membuat proses} dari langkah \textit{menjalankan program baru}.
+    \item Antara \texttt{fork()} dan \texttt{exec()}, child bisa melakukan pengaturan lanjutan: mengubah direktori kerja, mengatur \textit{file descriptor}, mengalihkan I/O, dan sebagainya.
+    \item \texttt{wait()} memberi kontrol sinkronisasi yang jelas kepada parent.
+\end{itemize}
+
+Kombinasi ini membuat banyak fitur sistem mudah dibangun, seperti pipa antar-proses, redireksi file, \textit{job control}, dan daemon.
+
+\begin{asidebox}{INTI MASALAH: \\ BAGAIMANA SHELL MENJALANKAN PERINTAH?}
+Shell modern bergantung pada tiga primitive ini: \texttt{fork()}, \texttt{exec()}, dan \texttt{wait()}. Dengan primitive sederhana tersebut, shell dapat mengeksekusi perintah pengguna, mengatur proses latar depan/latar belakang, serta menghubungkan keluaran dan masukan antar-program.
+\end{asidebox}
+
+\section{Ringkasan}
+Bab ini memperkenalkan API proses pada sistem UNIX. Kita mempelajari bahwa \texttt{fork()} membuat proses anak, \texttt{wait()} menyinkronkan parent dengan child, dan \texttt{exec()} mengganti program yang dijalankan oleh suatu proses. Tiga antarmuka ini adalah fondasi praktis untuk memahami eksekusi program, shell, serta mekanisme virtualisasi CPU dalam sistem operasi modern.
