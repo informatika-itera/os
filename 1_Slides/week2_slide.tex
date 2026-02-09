@@ -1,0 +1,717 @@
+%================================================
+%\tPACKAGES AND THEMES
+%================================================
+\documentclass[t,aspectratio=169,xcolor=dvipsnames]{beamer}
+
+\usetheme{SimplePlusAIC}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{svg}
+\usepackage{tcolorbox}
+\usepackage{tikz}
+\usepackage{makecell}
+
+\newcommand*{\defeq}{\stackrel{\text{def}}{=}}
+\usepackage{setspace}
+\usepackage[T1]{fontenc}
+\usepackage{helvet}
+\usepackage{textgreek}
+\usepackage{amsmath}
+\usepackage{bm}
+\usepackage{ragged2e}
+\usepackage{xfrac}
+\usepackage[loose]{units}
+\usepackage{braket}
+\usepackage{physics}
+\usepackage{gensymb}
+\usepackage{verbatim}
+\usepackage{fancyvrb}
+
+\usepackage[svgnames,table]{xcolor}
+\arrayrulecolor{black}
+\setlength{\arrayrulewidth}{0.20mm}
+\renewcommand{\arraystretch}{1.35}
+
+
+\newcommand{\tem}[1]{\textbf{\textcolor{red}{#1}}}
+
+%================================================
+%\tTITLE PAGE
+%================================================
+\title[Process \& OS Structure]{Process \& OS Structure}
+\subtitle{Week 2: Proses dan Struktur Sistem Operasi}
+\author[lectura.id/course/os]{lectura.id/course/os}
+\institute[ITERA]{Program Studi Teknik Informatika \\ Institut Teknologi Sumatera}
+\date{\textcolor{nyublue}{2026}}
+
+%================================================
+%\tBEGIN DOCUMENT
+%================================================
+\begin{document}
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+\begin{frame}
+    \frametitle{OUTLINE}
+    \framesubtitle{Peta materi pertemuan ini}
+    \small
+    \begin{spacing}{1.15}
+        \tableofcontents
+    \end{spacing}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Capaian Pembelajaran}
+    \framesubtitle{Kemampuan yang ditargetkan setelah kuliah}
+    \small
+    \begin{enumerate}
+        \item Menjelaskan perbedaan program dan proses secara formal
+        \item Memahami proses sebagai abstraksi virtualisasi CPU
+        \item Menjelaskan state proses dan transisinya
+        \item Mendeskripsikan data penting dalam PCB
+        \item Memahami batas mode user dan mode kernel
+        \item Menjelaskan peran \texttt{fork}, \texttt{exec}, \texttt{wait}, \texttt{exit}
+    \end{enumerate}
+    \begin{exampleblock}{Target Akhir}
+        Setelah pertemuan ini, mahasiswa mampu membaca alur hidup proses dari dibuat sampai selesai secara \tem{runut}.
+    \end{exampleblock}
+\end{frame}
+
+\section{Tujuan}
+
+\begin{frame}
+    \frametitle{Peta Pertemuan Hari Ini}
+    \framesubtitle{Urutan topik dari dasar ke implementasi}
+    \small
+    \begin{columns}[T]
+        \column{0.49\textwidth}
+        \begin{enumerate}
+            \item Beda formal program dan proses
+            \item Abstraksi proses pada virtualisasi CPU
+            \item Model state dan transisinya
+        \end{enumerate}
+        \column{0.49\textwidth}
+        \begin{enumerate}
+            \item Struktur data per-proses (PCB)
+            \item Batas mode user dan mode kernel
+            \item Peran \texttt{fork/exec/wait/exit}
+        \end{enumerate}
+    \end{columns}
+    \begin{block}{Arah Belajar}
+        Kita bergerak dari konsep \tem{program vs proses}, lalu ke state proses, kemudian ke mode kernel dan system call.
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Referensi dari Buku Terjemahan OSTEP}
+    \framesubtitle{Sumber utama untuk materi Week 2}
+    \begin{alertblock}{Sumber Materi}
+        Materi ini merujuk langsung ke pembahasan proses dan API proses pada \tem{folder Book Translate}.
+    \end{alertblock}
+    \vspace{0.1cm}
+    \small
+    \begin{enumerate}
+        \item \texttt{chapter2-book-translate.tex}: proses, state, PCB
+        \item \texttt{chapter3-book-translate.tex}: \texttt{fork}, \texttt{exec}, \texttt{wait}
+        \item \texttt{chapter1-book-translate.tex}: mode user/kernel dan system call
+    \end{enumerate}
+\end{frame}
+
+\section{Program dan Proses}
+
+\begin{frame}
+    \frametitle{Program vs Proses}
+    \framesubtitle{Membedakan artefak statis dan entitas berjalan}
+    \small
+    Analogi cepat: file resep di meja adalah \textbf{program}, kegiatan memasak di dapur adalah \textbf{proses}.
+
+    \vspace{0.2cm}
+    \begin{tabular}{|p{0.40\textwidth}|p{0.48\textwidth}|}
+        \hline
+        \textbf{Program} & \textbf{Proses} \\
+        \hline
+        Berkas executable di disk & Entitas aktif di CPU/memori \\
+        \hline
+        Tidak punya state runtime & Punya state: ready/running/waiting \\
+        \hline
+        Belum dijadwalkan OS & Dijadwalkan oleh kernel \\
+        \hline
+    \end{tabular}
+    \begin{block}{Inti Definisi}
+        \tem{Program} bersifat pasif, sedangkan \tem{proses} bersifat aktif karena sudah mendapat konteks eksekusi.
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Satu Program Bisa Jadi Banyak Proses}
+    \framesubtitle{Dampak ke PID, CPU, dan memori}
+    \small
+    Ilustrasi: aplikasi browser dibuka 3 jendela. Dari sisi OS, ini bisa jadi beberapa proses berbeda.
+    \vspace{0.2cm}
+    \begin{enumerate}
+        \item Setiap proses punya PID sendiri
+        \item Setiap proses punya jatah CPU sendiri
+        \item Setiap proses punya ruang alamat virtual sendiri
+    \end{enumerate}
+    \begin{exampleblock}{Implikasi Penting}
+        Nama aplikasinya sama, tapi setiap proses tetap dicatat terpisah agar kontrol OS tetap \tem{rapi}.
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Dari Program Menjadi Proses}
+    \framesubtitle{Alur pemuatan program ke ruang proses}
+    \small
+    \begin{center}
+        \includegraphics[height=0.42\textheight,keepaspectratio]{figures/2_fromprogtoproc.png}
+    \end{center}
+    \begin{block}{Ilustrasi OSTEP}
+        OS memuat program dari disk ke memori, lalu mengaktifkannya menjadi proses yang berjalan.
+    \end{block}
+\end{frame}
+
+\section{Abstraksi Proses}
+
+\begin{frame}
+    \frametitle{Proses sebagai Abstraksi CPU}
+    \framesubtitle{Ilusi banyak CPU melalui time-sharing}
+    \small
+    \begin{columns}[T]
+        \column{0.52\textwidth}
+        \begin{enumerate}
+            \item Time-sharing: giliran cepat antar proses
+            \item Multiprogramming: banyak proses aktif
+            \item Scheduler memilih proses berikutnya
+        \end{enumerate}
+        \column{0.44\textwidth}
+        Proses A $\rightarrow$ Proses B $\rightarrow$ Proses C
+
+        \vspace{0.2cm}
+        Ilusi yang terlihat pengguna:
+        "semua program berjalan bersamaan"
+    \end{columns}
+    \begin{alertblock}{Gagasan Kunci OSTEP}
+        Ilusi ini muncul karena pergantian sangat cepat, bukan karena setiap proses benar-benar punya CPU fisik sendiri.
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Kenapa Abstraksi Ini Dibutuhkan?}
+    \framesubtitle{Isolasi, perlindungan, dan keadilan eksekusi}
+    \begin{block}{Tujuan Sistem Operasi}
+        Abstraksi proses membantu OS menjaga \tem{isolasi}, \tem{perlindungan}, dan \tem{keadilan} pemakaian CPU.
+    \end{block}
+    \vspace{0.1cm}
+    \small
+    \begin{enumerate}
+        \item Isolasi: gangguan proses A tidak langsung menjatuhkan proses B
+        \item Perlindungan: proses user tidak bisa bebas merusak kernel
+        \item Keadilan: satu proses tidak memonopoli CPU terus-menerus
+    \end{enumerate}
+\end{frame}
+
+\section{Ruang Alamat Proses}
+
+\begin{frame}
+    \frametitle{Struktur Ruang Alamat Proses}
+    \framesubtitle{Komponen memori utama milik proses}
+    \begin{exampleblock}{Komponen Umum}
+        Sebuah proses biasanya punya segmen \tem{code}, \tem{data}, \tem{heap}, dan \tem{stack}.
+    \end{exampleblock}
+    \vspace{0.1cm}
+    \small
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{enumerate}
+            \item Code/Text: instruksi program
+            \item Data: variabel global/statis
+            \item Heap: alokasi dinamis
+        \end{enumerate}
+        \column{0.48\textwidth}
+        \begin{enumerate}
+            \item Stack: data pemanggilan fungsi
+            \item Heap cenderung naik
+            \item Stack cenderung turun
+        \end{enumerate}
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Dampak Isolasi Ruang Alamat}
+    \framesubtitle{Kenapa isolasi penting untuk keamanan sistem}
+    \begin{alertblock}{Manfaat Praktis}
+        Isolasi ruang alamat membuat sistem lebih \tem{aman} dan lebih \tem{stabil}.
+    \end{alertblock}
+    \vspace{0.1cm}
+    \small
+    \begin{enumerate}
+        \item Bug memori pada satu proses tidak otomatis merusak proses lain
+        \item Data proses tidak mudah dibaca proses lain
+        \item Kernel dapat menghentikan proses bermasalah tanpa mematikan sistem total
+    \end{enumerate}
+\end{frame}
+
+\section{State dan Lifecycle}
+
+\begin{frame}
+    \frametitle{Model State Proses}
+    \framesubtitle{State standar sepanjang siklus hidup proses}
+    \small
+    Ilustrasi sederhana:
+    \begin{enumerate}
+        \item \textbf{new}: siswa baru masuk kelas
+        \item \textbf{ready}: duduk siap dipanggil
+        \item \textbf{running}: sedang presentasi di depan
+        \item \textbf{waiting}: menunggu giliran alat/proyektor
+        \item \textbf{terminated}: presentasi selesai
+    \end{enumerate}
+    \begin{block}{Lima State Standar}
+        State proses membantu kernel mengambil keputusan cepat tentang proses mana yang boleh memakai CPU berikutnya.
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Diagram State Proses}
+    \framesubtitle{Visual transisi ready-running-blocked}
+    \small
+    \begin{center}
+        \includegraphics[height=0.35\textheight,keepaspectratio]{figures/2_state.png}
+    \end{center}
+    \begin{exampleblock}{Cara Baca Diagram}
+        Panah menunjukkan transisi state saat proses dijadwalkan, diblokir karena I/O, lalu siap lagi.
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Ilustrasi Antrean CPU}
+    \framesubtitle{Analogi sederhana pembagian jatah CPU}
+    \small
+    Bayangkan satu kasir melayani banyak pembeli.
+    \begin{enumerate}
+        \item Pembeli di baris antrean = state \textbf{ready}
+        \item Pembeli di meja kasir = state \textbf{running}
+        \item Pembeli yang pindah ambil barang = state \textbf{waiting}
+        \item Pembeli keluar toko = state \textbf{terminated}
+    \end{enumerate}
+    \begin{exampleblock}{Makna Analogi}
+        CPU itu seperti kasir tunggal; OS bertugas mengatur giliran agar semua proses tetap terlayani.
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Tracing Process State: CPU Only}
+    \framesubtitle{Contoh jejak eksekusi dua proses tanpa I/O}
+    \scriptsize
+    \begin{center}
+        \begin{tabular}{|c|c|c|p{4.2cm}|}
+            \hline
+            \textbf{Time} & \textbf{Process0} & \textbf{Process1} & \textbf{Notes} \\
+            \hline
+            1 & Running & Ready & - \\
+            \hline
+            2 & Running & Ready & - \\
+            \hline
+            3 & Running & Ready & - \\
+            \hline
+            4 & Running & Ready & Process0 now done \\
+            \hline
+            5 & - & Running & - \\
+            \hline
+            6 & - & Running & - \\
+            \hline
+            7 & - & Running & - \\
+            \hline
+            8 & - & Running & Process1 now done \\
+            \hline
+        \end{tabular}
+    \end{center}
+    \begin{alertblock}{Interpretasi}
+        Selama hanya ada kerja CPU (tanpa I/O), proses bergantian sesuai jatah hingga masing-masing selesai.
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Transisi Antar State}
+    \framesubtitle{Event yang memicu perpindahan state}
+    \small
+    \begin{tabular}{|p{0.35\textwidth}|p{0.53\textwidth}|}
+        \hline
+        \textbf{Transisi} & \textbf{Pemicu} \\
+        \hline
+        ready $\rightarrow$ running & Scheduler memilih proses \\
+        \hline
+        running $\rightarrow$ waiting & Proses meminta I/O \\
+        \hline
+        running $\rightarrow$ ready & Timer interrupt (preemption) \\
+        \hline
+        waiting $\rightarrow$ ready & I/O selesai \\
+        \hline
+        running $\rightarrow$ terminated & Proses memanggil \texttt{exit} \\
+        \hline
+    \end{tabular}
+    \begin{exampleblock}{Pemicu Utama}
+        Perubahan state tidak acak; selalu ada event yang bisa dijelaskan secara sistematis.
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Blocking vs Preemption}
+    \framesubtitle{Dua penyebab proses berhenti memakai CPU}
+    \small
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \textbf{Blocking}
+        \begin{enumerate}
+            \item Umum: menunggu I/O
+            \item Proses tidak siap jalan
+            \item Kembali setelah event selesai
+        \end{enumerate}
+        \column{0.48\textwidth}
+        \textbf{Preemption}
+        \begin{enumerate}
+            \item Umum: timer habis
+            \item Proses dipindah ke ready
+            \item Tujuan: fairness antar proses
+        \end{enumerate}
+    \end{columns}
+    \begin{alertblock}{Bedanya Apa?}
+        Blocking berarti proses \tem{menunggu}, sedangkan preemption berarti proses \tem{disela} demi pembagian jatah CPU.
+    \end{alertblock}
+\end{frame}
+
+\section{Context Switch dan PCB}
+
+\begin{frame}
+    \frametitle{Context Switch: Apa yang Terjadi?}
+    \framesubtitle{Menyimpan dan memulihkan konteks proses}
+    \small
+    Ilustrasi: guru memanggil siswa A presentasi, lalu menghentikan sementara, lalu memanggil siswa B.
+    \begin{enumerate}
+        \item Catatan posisi A harus disimpan dulu
+        \item B melanjutkan dari catatannya sendiri
+        \item Setelah itu A bisa dilanjutkan lagi dari titik terakhir
+    \end{enumerate}
+    \begin{block}{Definisi Konseptual}
+        Context switch adalah simpan konteks proses lama lalu pulihkan konteks proses baru.
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Overhead Context Switch}
+    \framesubtitle{Biaya performa dari pergantian proses}
+    \small
+    Context switch bukan kerja utama aplikasi, tapi kerja administrasi kernel.
+    \begin{enumerate}
+        \item Semakin sering switch, semakin besar waktu administrasi
+        \item Cache CPU bisa kurang efektif setelah pindah proses
+        \item Sistem harus menyeimbangkan respons dan efisiensi
+    \end{enumerate}
+    \begin{exampleblock}{Fakta Performa}
+        Context switch memang perlu, tetapi terlalu sering dapat menurunkan performa total sistem.
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{PCB (Process Control Block)}
+    \framesubtitle{Struktur data inti untuk state proses}
+    \begin{alertblock}{Database Mini Tiap Proses}
+        PCB adalah catatan resmi kernel tentang identitas dan kondisi \tem{setiap proses}.
+    \end{alertblock}
+    \vspace{0.1cm}
+    \small
+    \begin{columns}[T]
+        \column{0.49\textwidth}
+        \begin{enumerate}
+            \item PID
+            \item Process state
+            \item Snapshot register
+        \end{enumerate}
+        \column{0.49\textwidth}
+        \begin{enumerate}
+            \item Metadata penjadwalan
+            \item Pointer pemetaan memori
+            \item Referensi file descriptor terbuka
+        \end{enumerate}
+    \end{columns}
+\end{frame}
+
+\section{PID dan Hirarki Proses}
+
+\begin{frame}
+    \frametitle{PID, Parent, dan Child}
+    \framesubtitle{Relasi proses dalam bentuk pohon}
+    \begin{block}{Struktur Keluarga Proses}
+        Proses membentuk \tem{pohon proses}; parent membuat child, lalu kernel melacak hubungannya.
+    \end{block}
+    \vspace{0.1cm}
+    \small
+    \begin{enumerate}
+        \item PID unik untuk identitas
+        \item Parent-child penting untuk sinkronisasi \texttt{wait}
+        \item Process tree membantu observasi dan pengelolaan sistem
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Orphan dan Zombie (Pengantar)}
+    \framesubtitle{Kondisi khusus pada proses anak}
+    \begin{exampleblock}{Dua Kondisi yang Sering Ditanya}
+        \tem{Orphan}: parent selesai duluan. \tem{Zombie}: child selesai, tapi status belum diambil parent.
+    \end{exampleblock}
+    \vspace{0.1cm}
+    \small
+    \begin{enumerate}
+        \item Orphan biasanya diadopsi \texttt{init}/\texttt{systemd}
+        \item Zombie menyimpan jejak status proses yang sudah selesai
+        \item Parent perlu \texttt{wait} agar entri zombie dibersihkan
+    \end{enumerate}
+\end{frame}
+
+\section{Dual Mode dan System Call}
+
+\begin{frame}
+    \frametitle{Mode User vs Mode Kernel}
+    \framesubtitle{Batas hak akses untuk menjaga keamanan OS}
+    \small
+    \begin{columns}[T]
+        \column{0.49\textwidth}
+        \textbf{Mode User}
+        \begin{enumerate}
+            \item Akses dibatasi
+            \item Tidak boleh akses device langsung
+            \item Tidak boleh ubah page table
+        \end{enumerate}
+        \column{0.49\textwidth}
+        \textbf{Mode Kernel}
+        \begin{enumerate}
+            \item Hak akses penuh ke hardware
+            \item Menjalankan layanan OS
+            \item Menangani trap/interrupt
+        \end{enumerate}
+    \end{columns}
+    \begin{alertblock}{Boundary Keamanan}
+        Anggap ini seperti pintu keamanan: user mode ruang publik, kernel mode ruang server inti.
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Trap dan Alur System Call}
+    \framesubtitle{Jalur resmi transisi user ke kernel}
+    \small
+    Contoh sederhana: aplikasi ingin baca file. Ia tidak bicara langsung ke disk, tapi minta layanan OS.
+    \begin{enumerate}
+        \item Kode user memanggil system call
+        \item Hardware memicu trap ke kernel handler
+        \item Kernel mengeksekusi layanan
+        \item Return-from-trap mengembalikan kontrol ke mode user
+    \end{enumerate}
+    \begin{block}{Jalur Resmi User $\rightarrow$ Kernel}
+        Trap membuat perpindahan hak akses menjadi formal, tercatat, dan terkontrol.
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Function Call vs System Call}
+    \framesubtitle{Perbedaan pemanggilan biasa dan layanan kernel}
+    \begin{exampleblock}{Perbedaan Inti}
+        Function call tetap di ruang user; system call pindah ke kernel untuk layanan yang butuh hak istimewa.
+    \end{exampleblock}
+    \vspace{0.1cm}
+    \small
+    \begin{tabular}{|p{0.33\textwidth}|p{0.27\textwidth}|p{0.30\textwidth}|}
+        \hline
+        \textbf{Aspek} & \textbf{Function Call} & \textbf{System Call} \\
+        \hline
+        Mode eksekusi & User mode & User $\rightarrow$ Kernel \\
+        \hline
+        Hak akses & Biasa & Privileged via kernel \\
+        \hline
+        Contoh & Fungsi logika aplikasi & \texttt{fork}, \texttt{exec}, \texttt{wait}, \texttt{exit} \\
+        \hline
+    \end{tabular}
+\end{frame}
+
+\section{Guideline Hands On}
+
+\begin{frame}
+    \frametitle{Guideline Hands On Kelas}
+    \framesubtitle{OSTEP Code: folder cpu-api}
+    \small
+    Repo Hands On: \texttt{ostep-code} \texttt{$\rightarrow$} folder \texttt{cpu-api}
+    \begin{enumerate}
+        \item Tujuan utama: memahami \texttt{fork}, \texttt{exec}, \texttt{wait}
+        \item Fokus observasi: perilaku proses di OS nyata
+        \item Platform: Linux, macOS, atau WSL2 Ubuntu
+    \end{enumerate}
+    \begin{block}{Target Hands On}
+        Hands On ini menghubungkan teori proses di kelas dengan \tem{perilaku proses yang benar-benar berjalan}.
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Prasyarat Minimal}
+    \framesubtitle{Environment dan tools yang dibutuhkan}
+    \small
+    \begin{columns}[T]
+        \column{0.49\textwidth}
+        \textbf{OS disarankan}
+        \begin{enumerate}
+            \item Linux (Ubuntu/Debian/Fedora)
+            \item macOS
+            \item Windows: gunakan WSL2 Ubuntu
+        \end{enumerate}
+        \column{0.49\textwidth}
+        \textbf{Tools}
+        \begin{enumerate}
+            \item \texttt{git}
+            \item \texttt{gcc}/\texttt{clang}
+            \item \texttt{make}
+            \item \texttt{ps}, \texttt{top}/\texttt{htop}, \texttt{pstree}
+        \end{enumerate}
+    \end{columns}
+    \begin{alertblock}{Catatan Penting}
+        Native Windows tanpa WSL tidak cocok untuk \tem{fork()} dan tool POSIX.
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Setup Cepat Hands On}
+    \framesubtitle{Clone dan build source code}
+    \small
+    \begin{enumerate}
+        \item Clone repo:
+        \item \texttt{git clone https://github.com/remzi-arpacidusseau/ostep-code.git}
+        \item Masuk folder:
+        \item \texttt{cd ostep-code/cpu-api}
+        \item Build:
+        \item \texttt{make}
+    \end{enumerate}
+    \begin{exampleblock}{Jika Build Gagal}
+        Compile manual satu file: \texttt{gcc -O2 -Wall -Wextra -o demo demo.c}
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Menjalankan Program dan Observasi Proses}
+    \framesubtitle{Langkah run + pemantauan wajib}
+    \small
+    \begin{columns}[T]
+        \column{0.49\textwidth}
+        \textbf{Menjalankan program}
+        \begin{enumerate}
+            \item \texttt{./nama\_program}
+            \item \texttt{./nama\_program arg1 arg2}
+            \item Jika perlu: \texttt{chmod +x nama\_program}
+        \end{enumerate}
+        \column{0.49\textwidth}
+        \textbf{Observasi proses}
+        \begin{enumerate}
+            \item \texttt{ps -ef | head}
+            \item \texttt{top} atau \texttt{htop}
+            \item \texttt{ps -ef | grep fork}
+            \item \texttt{pstree -p}
+        \end{enumerate}
+    \end{columns}
+    \begin{block}{Kenapa Ini Wajib}
+        Mahasiswa perlu melihat hubungan \tem{PID, state, dan parent-child} langsung dari sistem.
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Kerangka Analisis Kelas}
+    \framesubtitle{Prediksi, observasi, lalu jelaskan}
+    \small
+    \begin{enumerate}
+        \item \textbf{Prediksi}: API apa yang dipakai? berapa proses muncul?
+        \item \textbf{Observasi}: PID parent-child, urutan output, indikasi zombie/orphan
+        \item \textbf{Jelaskan}: kaitkan ke state proses, context switch, dan efek \texttt{exec}/\texttt{wait}
+    \end{enumerate}
+    \begin{exampleblock}{Kebiasaan yang Harus Dibangun}
+        Jangan berhenti di output program; selalu jelaskan \tem{mengapa} output tersebut terjadi.
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Eksperimen Standar}
+    \framesubtitle{Tiga eksperimen yang disarankan}
+    \small
+    \begin{enumerate}
+        \item Ulangi eksekusi 5x untuk melihat nondeterminism
+        \item Tambahkan \texttt{sleep(1)} untuk menonjolkan scheduling
+        \item Bandingkan versi dengan \texttt{wait()} vs tanpa \texttt{wait()}
+    \end{enumerate}
+    \begin{alertblock}{Pertanyaan Inti}
+        Apakah urutan output berubah antar-run, dan apakah \texttt{wait()} membuat urutan lebih terkontrol?
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Checklist Konsep Setelah Hands On}
+    \framesubtitle{Wajib nyambung ke materi pertemuan 2}
+    \small
+    \begin{enumerate}
+        \item Program vs process: beda statis vs dinamis
+        \item \texttt{fork()}: kenapa proses bertambah dan output bisa dobel
+        \item \texttt{exec()}: apa yang diganti dalam address space
+        \item \texttt{wait()}: jaminan sinkronisasi parent-child
+        \item PID/PPID: representasi relasi proses di OS
+        \item Nondeterminism: dampak scheduler pada urutan output
+    \end{enumerate}
+    \begin{block}{Hasil Akhir Hands On}
+        Mahasiswa dapat menghubungkan \tem{API proses} dengan \tem{state proses} secara konkret.
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Troubleshooting Cepat}
+    \framesubtitle{Masalah umum saat setup dan build}
+    \small
+    \begin{enumerate}
+        \item \texttt{make: command not found} $\rightarrow$ install \texttt{make}
+        \item \texttt{gcc: command not found} $\rightarrow$ install build tools
+        \item Error header/flag $\rightarrow$ compile minimal: \texttt{gcc -Wall -o x file.c}
+        \item Pastikan berada di folder \texttt{cpu-api}
+    \end{enumerate}
+    \begin{exampleblock}{Catatan Platform}
+        Jika di Windows, gunakan \tem{WSL2 Ubuntu} agar API proses POSIX berjalan sesuai materi.
+    \end{exampleblock}
+\end{frame}
+
+\section{Penutup}
+
+\begin{frame}
+    \frametitle{Ringkasan Konseptual}
+    \framesubtitle{Poin inti yang harus diingat}
+    \begin{alertblock}{Lima Kalimat Kunci}
+        \tem{Proses} adalah abstraksi utama virtualisasi CPU, dan state proses selalu berada di bawah kontrol kernel.
+    \end{alertblock}
+    \vspace{0.1cm}
+    \small
+    \begin{enumerate}
+        \item Program statis, proses dinamis
+        \item Lifecycle proses berubah karena event sistem
+        \item Context switch bergantung pada data PCB
+        \item Dual mode menjaga keamanan eksekusi
+        \item System call adalah pintu resmi interaksi user-kernel
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Penutup}
+    \framesubtitle{Arah belajar lanjutan setelah Week 2}
+    \begin{exampleblock}{Lanjut Bacaan}
+        Untuk memperkuat konsep, baca ulang bab proses dan API proses di buku terjemahan OSTEP sebelum pertemuan berikutnya.
+    \end{exampleblock}
+    \vspace{0.1cm}
+    \small
+   \begin{enumerate}
+       \item Bab proses: abstraksi, state, PCB
+       \item Bab API proses: \texttt{fork}, \texttt{exec}, \texttt{wait}
+       \item Bab dasar OS: system call dan mode eksekusi
+   \end{enumerate}
+\end{frame}
+
+\end{document}

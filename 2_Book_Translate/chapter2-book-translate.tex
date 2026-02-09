@@ -68,6 +68,33 @@ Sekarang kita memiliki gagasan tentang apa itu proses, dan bagaimana proses itu 
 \label{fig:processstate}
 \end{figure}
 
+\begin{table}[ht]
+\centering
+\caption{Pelacakan State Proses: CPU Saja (\textit{Tracing Process State: CPU Only})}
+\label{tab:cpu-only-trace}
+\begin{tabular}{|c|c|c|p{5.5cm}|}
+\hline
+\textbf{Waktu} & \textbf{Proses 0} & \textbf{Proses 1} & \textbf{Catatan} \\
+\hline
+1 & Running & Ready & - \\
+\hline
+2 & Running & Ready & - \\
+\hline
+3 & Running & Ready & - \\
+\hline
+4 & Running & Ready & Proses 0 selesai \\
+\hline
+5 & - & Running & - \\
+\hline
+6 & - & Running & - \\
+\hline
+7 & - & Running & - \\
+\hline
+8 & - & Running & Proses 1 selesai \\
+\hline
+\end{tabular}
+\end{table}
+
 
 Penjadwalan transisi antar keadaan ini adalah inti dari pekerjaan OS.
 

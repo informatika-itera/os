@@ -142,9 +142,75 @@ Desain ini terkenal karena sederhana namun sangat fleksibel:
 
 Kombinasi ini membuat banyak fitur sistem mudah dibangun, seperti pipa antar-proses, redireksi file, \textit{job control}, dan daemon.
 
+\section{Redireksi Output dan Pipe}
+Pemisahan \texttt{fork()} dan \texttt{exec()} memungkinkan shell menyiapkan lingkungan child sebelum program baru dijalankan. Contoh paling umum adalah redireksi keluaran:
+\begin{itemize}
+    \item Shell membuat child dengan \texttt{fork()}.
+    \item Di child, \texttt{STDOUT\_FILENO} ditutup.
+    \item Shell membuka file tujuan, sehingga descriptor terendah yang kosong (biasanya 1) dipakai untuk file tersebut.
+    \item Child memanggil \texttt{exec()}, dan keluaran program otomatis mengarah ke file.
+\end{itemize}
+
+\begin{lstlisting}[language=C, caption={Sketsa redireksi sebelum \texttt{exec()}}, label={lst:redirection}]
+#include <fcntl.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+int main(void) {
+    int rc = fork();
+    if (rc < 0) return 1;
+
+    if (rc == 0) {
+        close(STDOUT_FILENO);
+        open("./hasil.txt", O_CREAT | O_WRONLY | O_TRUNC, 0700);
+
+        char *args[] = {"wc", "chapter3-book-translate.tex", NULL};
+        execvp(args[0], args);
+        exit(1);
+    }
+
+    wait(NULL);
+    return 0;
+}
+\end{lstlisting}
+
+Konsep yang sama dipakai untuk \textit{pipe}: keluaran proses pertama dihubungkan ke masukan proses kedua melalui \texttt{pipe()} dan pengaturan descriptor file. Karena itu shell bisa membangun rantai perintah seperti \texttt{grep -o kata file | wc -l}.
+
+\section{Kontrol Proses Dengan Sinyal}
+Selain membuat dan menunggu proses, UNIX menyediakan mekanisme kontrol lewat \textit{signal}. Dengan \texttt{kill()} (atau utilitas shell seperti \texttt{kill}/\texttt{killall}), proses dapat menerima sinyal untuk:
+\begin{itemize}
+    \item menghentikan proses (misalnya \texttt{SIGINT}),
+    \item menjeda proses (\texttt{SIGTSTP}),
+    \item melanjutkan proses yang dijeda (\texttt{SIGCONT}),
+    \item atau tindakan lain tergantung jenis sinyal.
+\end{itemize}
+
+Pada shell interaktif, kombinasi tombol seperti \texttt{Ctrl-C} dan \texttt{Ctrl-Z} pada dasarnya mengirim sinyal ke proses \textit{foreground}. Program juga bisa memasang handler (misalnya lewat \texttt{signal()}) untuk merespons sinyal tertentu.
+
+\section{Pengguna, Hak Akses, dan Superuser}
+Kontrol proses selalu terkait model pengguna (\textit{user}) di sistem operasi:
+\begin{itemize}
+    \item User biasa umumnya hanya boleh mengontrol proses miliknya sendiri.
+    \item OS memakai batasan ini untuk keamanan dan isolasi antar-user.
+    \item Superuser (\texttt{root}) dapat mengontrol proses user lain dan menjalankan operasi administratif.
+\end{itemize}
+
+Kewenangan \texttt{root} kuat, tetapi berisiko jika salah pakai. Praktik yang aman adalah memakai akun biasa untuk pekerjaan harian dan naik hak akses hanya saat benar-benar perlu.
+
+\section{Alat Praktis untuk Observasi Proses}
+Beberapa tool command-line yang sering dipakai:
+\begin{itemize}
+    \item \texttt{ps}: melihat daftar proses yang sedang berjalan.
+    \item \texttt{top}: memantau pemakaian CPU/memori secara real-time.
+    \item \texttt{kill} / \texttt{killall}: mengirim sinyal ke proses.
+\end{itemize}
+
+Tool-tool ini melengkapi pemahaman API proses: bukan hanya bagaimana proses dibuat, tetapi juga bagaimana proses dipantau dan dikendalikan saat sistem berjalan.
+
 \begin{asidebox}{INTI MASALAH: \\ BAGAIMANA SHELL MENJALANKAN PERINTAH?}
 Shell modern bergantung pada tiga primitive ini: \texttt{fork()}, \texttt{exec()}, dan \texttt{wait()}. Dengan primitive sederhana tersebut, shell dapat mengeksekusi perintah pengguna, mengatur proses latar depan/latar belakang, serta menghubungkan keluaran dan masukan antar-program.
 \end{asidebox}
 
 \section{Ringkasan}
-Bab ini memperkenalkan API proses pada sistem UNIX. Kita mempelajari bahwa \texttt{fork()} membuat proses anak, \texttt{wait()} menyinkronkan parent dengan child, dan \texttt{exec()} mengganti program yang dijalankan oleh suatu proses. Tiga antarmuka ini adalah fondasi praktis untuk memahami eksekusi program, shell, serta mekanisme virtualisasi CPU dalam sistem operasi modern.
+Bab ini memperkenalkan API proses pada sistem UNIX. Kita mempelajari bahwa \texttt{fork()} membuat proses anak, \texttt{wait()} menyinkronkan parent dengan child, dan \texttt{exec()} mengganti program yang dijalankan oleh suatu proses. Kita juga melihat mengapa pemisahan \texttt{fork()} dan \texttt{exec()} penting untuk membangun fitur shell seperti redireksi dan \textit{pipe}, bagaimana proses dikontrol melalui sinyal, serta bagaimana model user/root membatasi hak kontrol proses. Secara praktis, kombinasi API dan tool observasi seperti \texttt{ps}, \texttt{top}, dan \texttt{kill} adalah fondasi kerja sehari-hari dalam sistem operasi UNIX modern.
