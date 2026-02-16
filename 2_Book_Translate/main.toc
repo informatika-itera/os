@@ -25,3 +25,21 @@
 \contentsline {section}{\numberline {3.8}Pengguna, Hak Akses, dan Superuser}{29}{section.3.8}%
 \contentsline {section}{\numberline {3.9}Alat Praktis untuk Observasi Proses}{30}{section.3.9}%
 \contentsline {section}{\numberline {3.10}Ringkasan}{30}{section.3.10}%
+\contentsline {chapter}{\numberline {4}Penjadwalan: Pengenalan}{31}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Asumsi Beban Kerja}{31}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Metrik Penjadwalan}{32}{section.4.2}%
+\contentsline {section}{\numberline {4.3}First In, First Out (FIFO)}{32}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Shortest Job First (SJF)}{34}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Shortest Time-to-Completion First (STCF)}{35}{section.4.5}%
+\contentsline {section}{\numberline {4.6}Metrik Baru: Response Time}{36}{section.4.6}%
+\contentsline {section}{\numberline {4.7}Round Robin}{37}{section.4.7}%
+\contentsline {section}{\numberline {4.8}Menggabungkan I/O}{39}{section.4.8}%
+\contentsline {section}{\numberline {4.9}Tidak Lagi Maha Tahu}{40}{section.4.9}%
+\contentsline {section}{\numberline {4.10}Ringkasan}{40}{section.4.10}%
+\contentsline {chapter}{\numberline {5}Penjadwalan: Multi-Level Feedback Queue}{43}{chapter.5}%
+\contentsline {section}{\numberline {5.1}MLFQ: Aturan Dasar}{44}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Percobaan \#1: Cara Mengubah Prioritas}{45}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Percobaan \#2: Priority Boost}{48}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Percobaan \#3: Akuntansi yang Lebih Baik}{49}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Tuning MLFQ dan Isu Lainnya}{51}{section.5.5}%
+\contentsline {section}{\numberline {5.6}MLFQ: Ringkasan}{52}{section.5.6}%

@@ -1,0 +1,203 @@
+\chapter{Penjadwalan: Multi-Level Feedback Queue}
+\vspace{1cm}
+
+Dalam bab ini, kita akan menangani masalah pengembangan salah satu pendekatan penjadwalan yang paling terkenal, yang dikenal sebagai \textbf{Multi-level Feedback Queue (MLFQ)}. Penjadwal Multi-level Feedback Queue (MLFQ) pertama kali dijelaskan oleh Corbato dkk.\@ dalam sebuah sistem yang dikenal sebagai Compatible Time-Sharing System (CTSS) pada tahun 1962 [C+62], dan karya ini, bersama dengan karya selanjutnya pada Multics, membuat ACM menganugerahkan Corbato penghargaan tertingginya, yaitu Turing Award. Penjadwal ini kemudian disempurnakan selama bertahun-tahun hingga implementasi yang akan Anda temui di beberapa sistem modern.
+
+Masalah mendasar yang coba ditangani MLFQ ada dua. Pertama, ia ingin mengoptimalkan \textbf{turnaround time}, yang, seperti kita lihat di bab sebelumnya, dilakukan dengan menjalankan pekerjaan yang lebih pendek lebih dulu; sayangnya, OS umumnya tidak tahu berapa lama pekerjaan akan berjalan, persis pengetahuan yang dibutuhkan oleh algoritma seperti SJF (atau STCF). Kedua, MLFQ ingin membuat sistem terasa responsif bagi pengguna interaktif (yaitu, pengguna yang duduk dan menatap layar, menunggu proses selesai), dan dengan demikian meminimalkan \textbf{response time}; sayangnya, algoritma seperti Round Robin mengurangi response time tetapi mengerikan untuk turnaround time.
+
+Jadi, masalah kita: mengingat bahwa kita secara umum tidak mengetahui apa pun tentang suatu proses, bagaimana kita bisa membangun penjadwal untuk mencapai tujuan-tujuan ini? Bagaimana penjadwal bisa belajar, seiring sistem berjalan, tentang karakteristik pekerjaan yang dijalankannya, dan dengan demikian membuat keputusan penjadwalan yang lebih baik?
+
+\begin{asidebox}{INTI MASALAH: \\ BAGAIMANA MENJADWALKAN TANPA PENGETAHUAN SEMPURNA?}
+Bagaimana kita bisa merancang penjadwal yang meminimalkan response time untuk pekerjaan interaktif sekaligus meminimalkan turnaround time tanpa pengetahuan \textit{a priori} tentang panjang pekerjaan?
+\end{asidebox}
+
+\begin{asidebox}{TIP: BELAJAR DARI SEJARAH}
+Multi-level feedback queue adalah contoh yang sangat baik dari sistem yang belajar dari masa lalu untuk memprediksi masa depan. Pendekatan semacam itu umum dalam sistem operasi (dan banyak tempat lain dalam Ilmu Komputer, termasuk \textit{hardware branch predictor} dan algoritma \textit{caching}). Pendekatan semacam itu bekerja ketika pekerjaan memiliki fase perilaku dan dengan demikian dapat diprediksi; tentu saja, seseorang harus berhati-hati dengan teknik semacam itu, karena dengan mudah bisa salah dan mendorong sistem untuk membuat keputusan yang lebih buruk daripada yang akan dibuat tanpa pengetahuan sama sekali.
+\end{asidebox}
+
+\section{MLFQ: Aturan Dasar}
+Untuk membangun penjadwal seperti itu, dalam bab ini kita akan menjelaskan algoritma dasar di balik multi-level feedback queue; meskipun spesifikasi dari banyak MLFQ yang diimplementasikan berbeda [E95], sebagian besar pendekatannya serupa.
+
+Dalam pembahasan kita, MLFQ memiliki sejumlah \textbf{antrian} yang berbeda, masing-masing diberi tingkat \textbf{prioritas} yang berbeda. Pada waktu tertentu, sebuah pekerjaan yang siap dijalankan berada pada satu antrian. MLFQ menggunakan prioritas untuk memutuskan pekerjaan mana yang harus dijalankan pada waktu tertentu: pekerjaan dengan prioritas lebih tinggi (yaitu, pekerjaan pada antrian yang lebih tinggi) dipilih untuk dijalankan.
+
+Tentu saja, lebih dari satu pekerjaan mungkin berada pada antrian tertentu, dan dengan demikian memiliki prioritas yang sama. Dalam kasus ini, kita akan menggunakan penjadwalan round-robin di antara pekerjaan-pekerjaan tersebut. Dengan demikian, kita sampai pada dua aturan dasar pertama untuk MLFQ:
+
+\begin{itemize}
+    \item \textbf{Aturan 1:} Jika Priority(A) $>$ Priority(B), A berjalan (B tidak).
+    \item \textbf{Aturan 2:} Jika Priority(A) $=$ Priority(B), A \& B berjalan dalam mode round-robin.
+\end{itemize}
+
+Kunci dari penjadwalan MLFQ oleh karena itu terletak pada bagaimana penjadwal \textbf{mengatur prioritas}. Alih-alih memberikan prioritas tetap untuk setiap pekerjaan, MLFQ \textbf{memvariasikan} prioritas pekerjaan berdasarkan perilaku yang diamati. Jika, misalnya, sebuah pekerjaan berulang kali melepaskan CPU sementara menunggu input dari keyboard, MLFQ akan menjaga prioritasnya tetap tinggi, karena ini adalah perilaku proses interaktif. Jika sebaliknya, sebuah pekerjaan menggunakan CPU secara intensif untuk waktu yang lama, MLFQ akan mengurangi prioritasnya. Dengan cara ini, MLFQ akan mencoba \textbf{mempelajari} proses-proses saat mereka berjalan, dan dengan demikian menggunakan riwayat pekerjaan untuk memprediksi perilaku masa depannya.
+
+Jika kita menggambarkan bagaimana antrian-antrian mungkin terlihat pada saat tertentu, kita mungkin melihat sesuatu seperti ini: dua pekerjaan (A dan B) berada pada tingkat prioritas tertinggi, sementara pekerjaan C berada di tengah dan Pekerjaan D berada pada prioritas terendah (Gambar \ref{fig:mlfq-basic}). Dengan pengetahuan kita saat ini tentang bagaimana MLFQ bekerja, penjadwal hanya akan bergantian irisan waktu antara A dan B karena mereka adalah pekerjaan dengan prioritas tertinggi dalam sistem; pekerjaan malang C dan D tidak akan pernah mendapat kesempatan berjalan --- sebuah ketidakadilan!
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.5\textwidth]{figures/5_1.png}
+\caption{Contoh MLFQ}
+\label{fig:mlfq-basic}
+\end{figure}
+
+Tentu saja, sekadar menunjukkan gambaran statis dari beberapa antrian tidak benar-benar memberi Anda ide tentang bagaimana MLFQ bekerja. Yang kita butuhkan adalah memahami bagaimana prioritas pekerjaan berubah dari waktu ke waktu.
+
+\section{Percobaan \#1: Cara Mengubah Prioritas}
+Sekarang kita harus memutuskan bagaimana MLFQ akan mengubah tingkat prioritas pekerjaan (dan dengan demikian antrian mana ia berada) selama masa hidup pekerjaan. Untuk melakukan ini, kita harus mengingat beban kerja kita: campuran pekerjaan interaktif yang berjalan singkat (dan mungkin sering melepaskan CPU), dan beberapa pekerjaan ``CPU-bound'' yang berjalan lebih lama yang membutuhkan banyak waktu CPU tetapi di mana response time tidak penting.
+
+Untuk ini, kita membutuhkan konsep baru, yang akan kita sebut \textbf{jatah waktu} (\textit{allotment}) pekerjaan. Jatah waktu adalah jumlah waktu yang dapat dihabiskan pekerjaan pada tingkat prioritas tertentu sebelum penjadwal mengurangi prioritasnya. Untuk kemudahan, awalnya kita akan mengasumsikan jatah waktu sama dengan satu irisan waktu. Berikut adalah percobaan pertama kita pada algoritma penyesuaian prioritas:
+
+\begin{itemize}
+    \item \textbf{Aturan 3:} Ketika sebuah pekerjaan memasuki sistem, ia ditempatkan pada prioritas tertinggi (antrian paling atas).
+    \item \textbf{Aturan 4a:} Jika pekerjaan menggunakan seluruh jatah waktunya saat berjalan, prioritasnya dikurangi (yaitu, ia turun satu antrian).
+    \item \textbf{Aturan 4b:} Jika pekerjaan melepaskan CPU (misalnya, dengan melakukan operasi I/O) sebelum jatah waktu habis, ia tetap pada tingkat prioritas yang sama (yaitu, jatah waktunya direset).
+\end{itemize}
+
+\subsection*{Contoh 1: Satu Pekerjaan Berjalan Lama}
+Mari kita lihat beberapa contoh. Pertama, kita akan melihat apa yang terjadi ketika ada pekerjaan yang berjalan lama dalam sistem, dengan irisan waktu 10 ms (dan dengan jatah waktu diatur sama dengan irisan waktu) pada penjadwal tiga antrian.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.5\textwidth]{figures/5_2.png}
+\caption{Pekerjaan Berjalan Lama Dari Waktu ke Waktu}
+\label{fig:mlfq-long}
+\end{figure}
+
+Seperti yang Anda lihat dalam contoh (Gambar \ref{fig:mlfq-long}), pekerjaan masuk pada prioritas tertinggi (Q2). Setelah satu irisan waktu 10 ms, penjadwal mengurangi prioritas pekerjaan satu tingkat, dan dengan demikian pekerjaan berada di Q1. Setelah berjalan di Q1 selama satu irisan waktu, pekerjaan akhirnya diturunkan ke prioritas terendah dalam sistem (Q0), di mana ia bertahan. Cukup sederhana, bukan?
+
+\subsection*{Contoh 2: Datanglah Pekerjaan Pendek}
+Sekarang mari kita lihat contoh yang lebih rumit, dan semoga melihat bagaimana MLFQ mencoba mendekati SJF. Dalam contoh ini, ada dua pekerjaan: A, yang merupakan pekerjaan CPU-intensif yang berjalan lama, dan B, yang merupakan pekerjaan interaktif yang berjalan singkat. Asumsikan A telah berjalan selama beberapa waktu, dan kemudian B tiba.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.5\textwidth]{figures/5_3.png}
+\caption{Datanglah Pekerjaan Pendek}
+\label{fig:mlfq-short}
+\end{figure}
+
+Pekerjaan A (ditunjukkan dengan hitam) berjalan di antrian prioritas terendah (seperti pekerjaan CPU-intensif yang berjalan lama lainnya); B (ditunjukkan dengan abu-abu) tiba pada waktu $T = 100$ dan dengan demikian dimasukkan ke antrian tertinggi; karena waktu eksekusinya singkat (hanya 20 ms), B selesai sebelum mencapai antrian terbawah, dalam dua irisan waktu; kemudian A melanjutkan berjalan (pada prioritas rendah) (lihat Gambar \ref{fig:mlfq-short}).
+
+Dari contoh ini, Anda semoga bisa memahami salah satu tujuan utama algoritma: karena ia tidak tahu apakah sebuah pekerjaan akan menjadi pekerjaan pendek atau pekerjaan yang berjalan lama, ia pertama-tama mengasumsikan mungkin pekerjaan pendek, sehingga memberikan pekerjaan itu prioritas tinggi. Jika memang pekerjaan pendek, ia akan berjalan cepat dan selesai; jika bukan pekerjaan pendek, ia akan perlahan turun di antrian, dan dengan demikian segera membuktikan dirinya sebagai proses \textit{batch} yang berjalan lama. Dengan cara ini, MLFQ mendekati SJF.
+
+\subsection*{Contoh 3: Bagaimana dengan I/O?}
+Sekarang mari kita lihat contoh dengan beberapa I/O. Seperti yang dinyatakan Aturan 4b di atas, jika sebuah proses melepaskan prosesor sebelum menggunakan jatah waktunya, kita menjaganya pada tingkat prioritas yang sama. Maksud dari aturan ini sederhana: jika pekerjaan interaktif, misalnya, melakukan banyak I/O (katakan dengan menunggu input pengguna dari keyboard atau mouse), ia akan melepaskan CPU sebelum jatah waktunya selesai; dalam kasus seperti itu, kita tidak ingin menghukum pekerjaan tersebut dan dengan demikian hanya menjaganya pada tingkat yang sama.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.5\textwidth]{figures/5_4.png}
+\caption{Beban Kerja Campuran I/O dan CPU-intensif}
+\label{fig:mlfq-io}
+\end{figure}
+
+Contoh ini menunjukkan pekerjaan interaktif B (ditunjukkan dengan abu-abu) yang membutuhkan CPU hanya selama 1 ms sebelum melakukan I/O, bersaing untuk CPU dengan pekerjaan \textit{batch} yang berjalan lama A (ditunjukkan dengan hitam) (lihat Gambar \ref{fig:mlfq-io}). Pendekatan MLFQ menjaga B pada prioritas tertinggi karena B terus melepaskan CPU; jika B adalah pekerjaan interaktif, MLFQ selanjutnya mencapai tujuannya menjalankan pekerjaan interaktif dengan cepat.
+
+\subsection*{Masalah dengan MLFQ Kita Saat Ini}
+Kita dengan demikian memiliki MLFQ dasar. Tampaknya ia melakukan pekerjaan yang cukup baik, berbagi CPU secara adil di antara pekerjaan yang berjalan lama, dan membiarkan pekerjaan pendek atau I/O-intensif interaktif berjalan dengan cepat. Sayangnya, pendekatan yang telah kita kembangkan sejauh ini mengandung kelemahan serius. Bisakah Anda memikirkannya?
+
+Pertama, ada masalah \textbf{kelaparan} (\textit{starvation}): jika ada ``terlalu banyak'' pekerjaan interaktif dalam sistem, mereka akan bergabung untuk menghabiskan semua waktu CPU, dan dengan demikian pekerjaan yang berjalan lama tidak akan pernah menerima waktu CPU (mereka kelaparan). Kita ingin membuat kemajuan pada pekerjaan-pekerjaan ini bahkan dalam skenario ini.
+
+Kedua, pengguna yang cerdas dapat menulis ulang program mereka untuk \textbf{mempermainkan penjadwal} (\textit{gaming the scheduler}). Mempermainkan penjadwal umumnya merujuk pada ide melakukan sesuatu licik untuk menipu penjadwal agar memberi Anda lebih dari bagian yang adil dari sumber daya. Algoritma yang telah kita jelaskan rentan terhadap serangan berikut: sebelum jatah waktu habis, keluarkan operasi I/O (misalnya, ke file) dan dengan demikian lepaskan CPU; melakukan hal itu memungkinkan Anda tetap di antrian yang sama, dan dengan demikian mendapatkan persentase waktu CPU yang lebih tinggi. Ketika dilakukan dengan benar (misalnya, dengan berjalan selama 99\% dari jatah waktu sebelum melepaskan CPU), sebuah pekerjaan bisa hampir memonopoli CPU.
+
+Akhirnya, sebuah program mungkin mengubah perilakunya dari waktu ke waktu; apa yang bersifat CPU-bound mungkin beralih ke fase interaktivitas. Dengan pendekatan kita saat ini, pekerjaan seperti itu akan kurang beruntung dan tidak diperlakukan seperti pekerjaan interaktif lainnya dalam sistem.
+
+\begin{asidebox}{TIP: PENJADWALAN HARUS AMAN DARI SERANGAN}
+Anda mungkin berpikir bahwa kebijakan penjadwalan, apakah di dalam OS itu sendiri (seperti yang dibahas di sini), atau dalam konteks yang lebih luas (misalnya, dalam penanganan permintaan I/O sistem penyimpanan terdistribusi), bukan masalah keamanan, tetapi dalam semakin banyak kasus, ia memang persis itu. Pertimbangkan pusat data modern, di mana pengguna dari seluruh dunia berbagi CPU, memori, jaringan, dan sistem penyimpanan; tanpa kehati-hatian dalam desain dan penegakan kebijakan, satu pengguna mungkin dapat merugikan orang lain dan mendapatkan keuntungan untuk dirinya sendiri. Jadi, kebijakan penjadwalan membentuk bagian penting dari keamanan sistem, dan harus dibangun dengan hati-hati.
+\end{asidebox}
+
+\section{Percobaan \#2: Priority Boost}
+Mari kita coba mengubah aturan dan lihat apakah kita bisa menghindari masalah kelaparan. Apa yang bisa kita lakukan untuk menjamin bahwa pekerjaan CPU-bound akan membuat kemajuan (meskipun tidak banyak)?
+
+Ide sederhananya di sini adalah secara berkala \textbf{meningkatkan} (\textit{boost}) prioritas semua pekerjaan dalam sistem. Ada banyak cara untuk mencapai ini, tetapi mari kita lakukan sesuatu yang sederhana: lempar semuanya ke antrian paling atas; oleh karena itu, sebuah aturan baru:
+
+\begin{itemize}
+    \item \textbf{Aturan 5:} Setelah beberapa periode waktu $S$, pindahkan semua pekerjaan dalam sistem ke antrian paling atas.
+\end{itemize}
+
+Aturan baru kita memecahkan dua masalah sekaligus. Pertama, proses-proses dijamin tidak kelaparan: dengan duduk di antrian atas, sebuah pekerjaan akan berbagi CPU dengan pekerjaan prioritas tinggi lainnya dalam mode round-robin, dan dengan demikian akhirnya menerima layanan. Kedua, jika pekerjaan CPU-bound telah menjadi interaktif, penjadwal memperlakukannya dengan tepat setelah ia menerima peningkatan prioritas.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/5_5.png}
+\caption{Tanpa (Kiri) dan Dengan (Kanan) Priority Boost}
+\label{fig:mlfq-boost}
+\end{figure}
+
+Mari kita lihat sebuah contoh (Gambar \ref{fig:mlfq-boost}). Dalam skenario ini, kita hanya menunjukkan perilaku pekerjaan yang berjalan lama ketika bersaing untuk CPU dengan dua pekerjaan interaktif yang berjalan singkat. Di sisi kiri, tidak ada peningkatan prioritas, dan dengan demikian pekerjaan yang berjalan lama kelaparan setelah dua pekerjaan pendek tiba; di sisi kanan, ada peningkatan prioritas setiap 100 ms (yang kemungkinan nilai yang terlalu kecil, tetapi digunakan di sini untuk contoh), dan dengan demikian kita setidaknya menjamin bahwa pekerjaan yang berjalan lama akan membuat kemajuan, dinaikkan ke prioritas tertinggi setiap 100 ms dan dengan demikian mendapat kesempatan berjalan secara berkala.
+
+Tentu saja, penambahan periode waktu $S$ mengarah pada pertanyaan yang jelas: berapa yang harus ditetapkan untuk $S$? John Ousterhout, seorang peneliti sistem yang dihormati [O11], biasa menyebut nilai-nilai seperti itu dalam sistem sebagai \textbf{konstanta voo-doo}, karena tampaknya memerlukan semacam sihir hitam untuk mengaturnya dengan benar. Sayangnya, $S$ memiliki nuansa itu. Jika diatur terlalu tinggi, pekerjaan yang berjalan lama bisa kelaparan; terlalu rendah, dan pekerjaan interaktif mungkin tidak mendapatkan bagian CPU yang tepat.
+
+\section{Percobaan \#3: Akuntansi yang Lebih Baik}
+Sekarang kita memiliki satu masalah lagi untuk dipecahkan: bagaimana mencegah pemermainan penjadwal kita? Pelaku sebenarnya di sini, seperti yang mungkin Anda duga, adalah Aturan 4a dan 4b, yang memungkinkan pekerjaan mempertahankan prioritasnya dengan melepaskan CPU sebelum jatah waktunya habis. Jadi apa yang harus kita lakukan?
+
+\begin{asidebox}{TIP: HINDARI KONSTANTA VOO-DOO (HUKUM OUSTERHOUT)}
+Menghindari konstanta voo-doo adalah ide yang baik kapan pun memungkinkan. Sayangnya, seperti dalam contoh di atas, sering kali sulit. Seseorang bisa mencoba membuat sistem belajar nilai yang baik, tetapi itu juga tidak mudah. Hasil yang sering terjadi: file konfigurasi yang dipenuhi dengan nilai parameter default yang bisa disesuaikan oleh administrator berpengalaman ketika sesuatu tidak berjalan dengan benar. Seperti yang bisa Anda bayangkan, ini sering dibiarkan tidak dimodifikasi, dan dengan demikian kita dibiarkan berharap bahwa default bekerja dengan baik di lapangan. Tip ini dibawakan oleh profesor OS lama kita, John Ousterhout, dan karenanya kita menyebutnya Hukum Ousterhout.
+\end{asidebox}
+
+Solusi di sini adalah melakukan \textbf{akuntansi yang lebih baik} terhadap waktu CPU pada setiap tingkat MLFQ. Alih-alih lupakan berapa banyak jatah waktu yang telah digunakan proses pada tingkat tertentu ketika ia melakukan I/O, penjadwal harus melacaknya; setelah proses telah menggunakan jatah waktunya, ia diturunkan ke antrian prioritas berikutnya. Apakah ia menggunakan jatah waktunya dalam satu \textit{burst} panjang atau banyak yang pendek seharusnya tidak penting. Kita dengan demikian menulis ulang Aturan 4a dan 4b menjadi satu aturan berikut:
+
+\begin{itemize}
+    \item \textbf{Aturan 4:} Setelah pekerjaan menggunakan jatah waktunya pada tingkat tertentu (terlepas dari berapa kali ia telah melepaskan CPU), prioritasnya dikurangi (yaitu, ia turun satu antrian).
+\end{itemize}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/5_6.png}
+\caption{Tanpa (Kiri) dan Dengan (Kanan) Toleransi Pemermainan}
+\label{fig:mlfq-gaming}
+\end{figure}
+
+Mari kita lihat sebuah contoh (Gambar \ref{fig:mlfq-gaming}). Di sisi kiri, tanpa perlindungan dari pemermainan, sebuah proses dapat mengeluarkan I/O sebelum jatah waktunya habis, sehingga tetap pada tingkat prioritas yang sama, dan mendominasi waktu CPU. Dengan akuntansi yang lebih baik (di sisi kanan), terlepas dari perilaku I/O proses, ia perlahan turun di antrian, dan dengan demikian tidak dapat memperoleh bagian CPU yang tidak adil.
+
+\section{Tuning MLFQ dan Isu Lainnya}
+Beberapa isu lain muncul dengan penjadwalan MLFQ. Satu pertanyaan besar adalah bagaimana memparameterisasi penjadwal seperti itu. Misalnya, berapa banyak antrian yang harus ada? Berapa besar irisan waktu per antrian? Jatah waktunya? Seberapa sering prioritas harus dinaikkan untuk menghindari kelaparan dan memperhitungkan perubahan perilaku? Tidak ada jawaban mudah untuk pertanyaan-pertanyaan ini, dan dengan demikian hanya pengalaman dengan beban kerja dan tuning selanjutnya dari penjadwal yang akan mengarah pada keseimbangan yang memuaskan.
+
+Misalnya, sebagian besar varian MLFQ memungkinkan panjang irisan waktu yang bervariasi di antara antrian yang berbeda. Antrian prioritas tinggi biasanya diberi irisan waktu pendek; mereka terdiri dari pekerjaan interaktif, bagaimanapun juga, dan dengan demikian bergantian dengan cepat di antara mereka masuk akal (misalnya, 10 ms atau kurang). Antrian prioritas rendah, sebaliknya, berisi pekerjaan yang berjalan lama yang bersifat CPU-bound; oleh karena itu, irisan waktu yang lebih panjang bekerja dengan baik (misalnya, 100-an ms).
+
+Implementasi MLFQ Solaris --- kelas penjadwalan Time-Sharing, atau TS --- sangat mudah dikonfigurasi; ia menyediakan sekumpulan tabel yang menentukan persis bagaimana prioritas suatu proses diubah sepanjang masa hidupnya, berapa lama setiap irisan waktu, dan seberapa sering untuk meningkatkan prioritas pekerjaan [AD00]; seorang administrator dapat mengutak-atik tabel ini untuk membuat penjadwal berperilaku dengan cara yang berbeda. Nilai default untuk tabel adalah 60 antrian, dengan panjang irisan waktu yang meningkat perlahan dari 20 milidetik (prioritas tertinggi) hingga beberapa ratus milidetik (terendah), dan prioritas dinaikkan sekitar setiap 1 detik atau lebih.
+
+Penjadwal MLFQ lainnya tidak menggunakan tabel atau aturan persis yang dijelaskan dalam bab ini; melainkan mereka menyesuaikan prioritas menggunakan formula matematika. Misalnya, penjadwal FreeBSD (versi 4.3) menggunakan formula untuk menghitung tingkat prioritas saat ini dari sebuah pekerjaan, mendasarkannya pada berapa banyak CPU yang telah digunakan proses [LM+89]; selain itu, penggunaan meluruh dari waktu ke waktu, memberikan peningkatan prioritas yang diinginkan dengan cara yang berbeda dari yang dijelaskan di sini. Lihat makalah Epema untuk tinjauan yang sangat baik tentang algoritma \textit{decay-usage} dan propertinya [E95].
+
+Akhirnya, banyak penjadwal memiliki beberapa fitur lain yang mungkin Anda temui. Misalnya, beberapa penjadwal memesan tingkat prioritas tertinggi untuk pekerjaan sistem operasi; dengan demikian pekerjaan pengguna biasa tidak pernah bisa mendapatkan tingkat prioritas tertinggi dalam sistem. Beberapa sistem juga memungkinkan beberapa saran pengguna untuk membantu mengatur prioritas; misalnya, dengan menggunakan utilitas baris perintah \texttt{nice} Anda dapat meningkatkan atau mengurangi prioritas pekerjaan (sedikit) dan dengan demikian meningkatkan atau mengurangi peluangnya untuk berjalan pada waktu tertentu.
+
+\begin{asidebox}{TIP: GUNAKAN SARAN JIKA MEMUNGKINKAN}
+Karena sistem operasi jarang tahu apa yang terbaik untuk setiap proses di sistem, sering kali berguna untuk menyediakan antarmuka yang memungkinkan pengguna atau administrator memberikan beberapa petunjuk ke OS. Kita sering menyebut petunjuk tersebut sebagai \textbf{saran} (\textit{advice}), karena OS tidak selalu harus memperhatikannya, tetapi mungkin memperhitungkan saran tersebut untuk membuat keputusan yang lebih baik. Petunjuk semacam itu berguna di banyak bagian OS, termasuk penjadwal (misalnya, dengan \texttt{nice}), manajer memori (misalnya, \texttt{madvise}), dan sistem file (misalnya, \textit{informed prefetching and caching}).
+\end{asidebox}
+
+\section{MLFQ: Ringkasan}
+Kita telah menjelaskan pendekatan penjadwalan yang dikenal sebagai \textbf{Multi-Level Feedback Queue (MLFQ)}. Semoga Anda sekarang bisa melihat mengapa ia dinamai seperti itu: ia memiliki banyak tingkat antrian, dan menggunakan umpan balik (\textit{feedback}) untuk menentukan prioritas pekerjaan tertentu. Sejarah adalah panduannya: perhatikan bagaimana pekerjaan berperilaku dari waktu ke waktu dan perlakukan mereka sesuai.
+
+Kumpulan aturan MLFQ yang disempurnakan, yang tersebar di seluruh bab, direproduksi di sini:
+
+\begin{itemize}
+    \item \textbf{Aturan 1:} Jika Priority(A) $>$ Priority(B), A berjalan (B tidak).
+    \item \textbf{Aturan 2:} Jika Priority(A) $=$ Priority(B), A \& B berjalan dalam mode round-robin menggunakan irisan waktu (panjang kuantum) dari antrian yang bersangkutan.
+    \item \textbf{Aturan 3:} Ketika sebuah pekerjaan memasuki sistem, ia ditempatkan pada prioritas tertinggi (antrian paling atas).
+    \item \textbf{Aturan 4:} Setelah pekerjaan menggunakan jatah waktunya pada tingkat tertentu (terlepas dari berapa kali ia telah melepaskan CPU), prioritasnya dikurangi (yaitu, ia turun satu antrian).
+    \item \textbf{Aturan 5:} Setelah beberapa periode waktu $S$, pindahkan semua pekerjaan dalam sistem ke antrian paling atas.
+\end{itemize}
+
+MLFQ menarik karena alasan berikut: alih-alih menuntut pengetahuan \textit{a priori} tentang sifat pekerjaan, ia mengamati eksekusi pekerjaan dan memprioritaskannya sesuai. Dengan cara ini, ia berhasil mencapai yang terbaik dari kedua dunia: ia dapat memberikan kinerja keseluruhan yang sangat baik (mirip dengan SJF/STCF) untuk pekerjaan interaktif yang berjalan singkat, dan bersifat adil serta membuat kemajuan untuk beban kerja CPU-intensif yang berjalan lama. Untuk alasan ini, banyak sistem, termasuk turunan BSD UNIX [LM+89, B86], Solaris [M06], dan Windows NT serta sistem operasi Windows berikutnya [CS97] menggunakan bentuk MLFQ sebagai penjadwal dasar mereka.
+
+\section*{Referensi}
+\begin{itemize}
+    \item {[AD00]} ``Multilevel Feedback Queue Scheduling in Solaris'' oleh Andrea Arpaci-Dusseau. Tersedia: \url{http://www.ostep.org/Citations/notes-solaris.pdf}.
+    \item {[B86]} ``The Design of the UNIX Operating System'' oleh M.J. Bach. Prentice-Hall, 1986.
+    \item {[C+62]} ``An Experimental Time-Sharing System'' oleh F. J. Corbato, M. M. Daggett, R. C. Daley. IFIPS 1962.
+    \item {[CS97]} ``Inside Windows NT'' oleh Helen Custer dan David A. Solomon. Microsoft Press, 1997.
+    \item {[E95]} ``An Analysis of Decay-Usage Scheduling in Multiprocessors'' oleh D.H.J. Epema. SIGMETRICS '95.
+    \item {[LM+89]} ``The Design and Implementation of the 4.3BSD UNIX Operating System'' oleh S.J. Leffler, M.K. McKusick, M.J. Karels, J.S. Quarterman. Addison-Wesley, 1989.
+    \item {[M06]} ``Solaris Internals: Solaris 10 and OpenSolaris Kernel Architecture'' oleh Richard McDougall. Prentice-Hall, 2006.
+    \item {[O11]} ``John Ousterhout's Home Page'' oleh John Ousterhout. \url{www.stanford.edu/ouster/}.
+    \item {[P+95]} ``Informed Prefetching and Caching'' oleh R.H. Patterson dkk. SOSP '95, Copper Mountain, Colorado, Oktober 1995.
+\end{itemize}
+
+\section*{Pekerjaan Rumah (Simulasi)}
+Program \texttt{mlfq.py} memungkinkan Anda melihat bagaimana penjadwal MLFQ yang disajikan dalam bab ini berperilaku. Lihat README untuk detailnya.
+
+\textbf{Pertanyaan}
+\begin{enumerate}
+    \item Jalankan beberapa masalah yang dihasilkan secara acak dengan hanya dua pekerjaan dan dua antrian; hitung jejak eksekusi MLFQ untuk masing-masing. Buat hidup Anda lebih mudah dengan membatasi panjang setiap pekerjaan dan menonaktifkan I/O.
+    \item Bagaimana Anda akan menjalankan penjadwal untuk mereproduksi setiap contoh dalam bab ini?
+    \item Bagaimana Anda akan mengkonfigurasi parameter penjadwal agar berperilaku persis seperti penjadwal round-robin?
+    \item Buatlah beban kerja dengan dua pekerjaan dan parameter penjadwal sehingga satu pekerjaan memanfaatkan Aturan 4a dan 4b lama (dinyalakan dengan flag \texttt{-s}) untuk mempermainkan penjadwal dan mendapatkan 99\% CPU selama interval waktu tertentu.
+    \item Diberikan sistem dengan panjang kuantum 10 ms di antrian tertingginya, seberapa sering Anda harus menaikkan pekerjaan kembali ke tingkat prioritas tertinggi (dengan flag \texttt{-B}) untuk menjamin bahwa satu pekerjaan yang berjalan lama (dan berpotensi kelaparan) mendapatkan setidaknya 5\% CPU?
+    \item Satu pertanyaan yang muncul dalam penjadwalan adalah ujung antrian mana untuk menambahkan pekerjaan yang baru selesai I/O; flag \texttt{-I} mengubah perilaku ini untuk simulator penjadwalan ini. Bermain-mainlah dengan beberapa beban kerja dan lihat apakah Anda bisa melihat efek dari flag ini.
+\end{enumerate}

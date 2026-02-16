@@ -1,0 +1,233 @@
+\chapter{Penjadwalan: Pengenalan}
+\vspace{1cm}
+
+Sekarang, mekanisme tingkat rendah dalam menjalankan proses (misalnya, \textit{context switching}) seharusnya sudah jelas; jika belum, kembali satu atau dua bab, dan baca kembali penjelasan tentang bagaimana hal tersebut bekerja. Namun, kita belum memahami \textbf{kebijakan} tingkat tinggi yang digunakan oleh penjadwal OS. Kita sekarang akan membahas hal itu, menyajikan serangkaian \textbf{kebijakan penjadwalan} (kadang-kadang disebut \textit{disiplin}) yang telah dikembangkan oleh berbagai orang cerdas dan pekerja keras selama bertahun-tahun.
+
+Asal-usul penjadwalan, pada kenyataannya, mendahului sistem komputer; pendekatan awal diambil dari bidang \textbf{manajemen operasi} dan diterapkan pada komputer. Kenyataan ini seharusnya tidak mengejutkan: lini perakitan dan banyak usaha manusia lainnya juga membutuhkan penjadwalan, dan banyak kekhawatiran yang sama ada di dalamnya, termasuk keinginan tajam untuk efisiensi.
+
+\begin{asidebox}{INTI MASALAH: \\ BAGAIMANA MENGEMBANGKAN KEBIJAKAN PENJADWALAN}
+Bagaimana kita harus mengembangkan kerangka dasar untuk berpikir tentang kebijakan penjadwalan? Apa saja asumsi kunci? Metrik apa yang penting? Pendekatan dasar apa yang telah digunakan dalam sistem komputer paling awal?
+\end{asidebox}
+
+\section{Asumsi Beban Kerja}
+Sebelum masuk ke berbagai kemungkinan kebijakan, mari kita terlebih dahulu membuat sejumlah asumsi yang menyederhanakan tentang proses-proses yang berjalan dalam sistem, yang kadang-kadang secara kolektif disebut \textbf{beban kerja} (\textit{workload}). Menentukan beban kerja adalah bagian penting dari membangun kebijakan, dan semakin banyak yang Anda ketahui tentang beban kerja, semakin baik kebijakan Anda dapat disesuaikan.
+
+Asumsi beban kerja yang kita buat di sini sebagian besar tidak realistis, tetapi tidak apa-apa (untuk saat ini), karena kita akan melonggarkannya seiring berjalannya waktu, dan akhirnya mengembangkan apa yang akan kita sebut sebagai \ldots (jeda dramatis) \ldots sebuah disiplin penjadwalan yang sepenuhnya operasional.
+
+Kita akan membuat asumsi berikut tentang proses-proses, yang kadang-kadang disebut \textbf{pekerjaan} (\textit{jobs}), yang berjalan dalam sistem:
+
+\begin{enumerate}
+    \item Setiap pekerjaan berjalan untuk jumlah waktu yang sama.
+    \item Semua pekerjaan tiba pada waktu yang sama.
+    \item Setelah dimulai, setiap pekerjaan berjalan sampai selesai.
+    \item Semua pekerjaan hanya menggunakan CPU (yaitu, tidak melakukan I/O).
+    \item Waktu eksekusi setiap pekerjaan diketahui.
+\end{enumerate}
+
+Kita mengatakan banyak dari asumsi ini tidak realistis, tetapi seperti halnya beberapa hewan ``lebih setara dari yang lain'' dalam \textit{Animal Farm} karya Orwell [O45], beberapa asumsi lebih tidak realistis daripada yang lain dalam bab ini. Secara khusus, mungkin mengganggu Anda bahwa waktu eksekusi setiap pekerjaan diketahui: ini akan membuat penjadwal menjadi \textbf{maha tahu} (\textit{omniscient}), yang meskipun akan hebat (mungkin), tidak mungkin terjadi dalam waktu dekat.
+
+\section{Metrik Penjadwalan}
+Selain membuat asumsi beban kerja, kita juga membutuhkan satu hal lagi untuk memungkinkan kita membandingkan kebijakan penjadwalan yang berbeda: sebuah \textbf{metrik penjadwalan}. Metrik hanyalah sesuatu yang kita gunakan untuk mengukur sesuatu, dan ada sejumlah metrik berbeda yang masuk akal dalam penjadwalan.
+
+Untuk saat ini, mari kita juga menyederhanakan hidup kita dengan hanya memiliki satu metrik: \textbf{turnaround time} (waktu penyelesaian). Turnaround time dari sebuah pekerjaan didefinisikan sebagai waktu di mana pekerjaan selesai dikurangi waktu di mana pekerjaan tiba dalam sistem. Secara lebih formal:
+
+\[
+T_{\text{turnaround}} = T_{\text{selesai}} - T_{\text{tiba}}
+\]
+
+Karena kita telah mengasumsikan bahwa semua pekerjaan tiba pada waktu yang sama, untuk saat ini $T_{\text{tiba}} = 0$ dan karenanya $T_{\text{turnaround}} = T_{\text{selesai}}$. Fakta ini akan berubah seiring kita melonggarkan asumsi-asumsi yang disebutkan di atas.
+
+Anda perlu memperhatikan bahwa turnaround time adalah metrik \textbf{kinerja}, yang akan menjadi fokus utama kita di bab ini. Metrik lain yang menarik adalah \textbf{keadilan} (\textit{fairness}), sebagaimana diukur (misalnya) oleh Indeks Keadilan Jain [J91]. Kinerja dan keadilan sering bertentangan dalam penjadwalan; sebuah penjadwal, misalnya, mungkin mengoptimalkan kinerja tetapi dengan biaya mencegah beberapa pekerjaan berjalan, sehingga menurunkan keadilan. Dilema ini menunjukkan kepada kita bahwa hidup tidak selalu sempurna.
+
+\section{First In, First Out (FIFO)}
+Algoritma paling dasar yang dapat kita implementasikan dikenal sebagai penjadwalan \textbf{First In, First Out (FIFO)} atau kadang-kadang \textbf{First Come, First Served (FCFS)}.
+
+FIFO memiliki sejumlah properti positif: jelas sederhana dan dengan demikian mudah diimplementasikan. Dan, dengan asumsi kita, ia bekerja cukup baik.
+
+Mari kita lihat contoh cepat bersama. Bayangkan tiga pekerjaan tiba dalam sistem, A, B, dan C, pada waktu yang hampir bersamaan ($T_{\text{tiba}} \approx 0$). Karena FIFO harus menempatkan satu pekerjaan lebih dulu, mari kita asumsikan bahwa meskipun mereka semua tiba secara bersamaan, A tiba sedikit lebih dulu dari B yang tiba sedikit lebih dulu dari C. Asumsikan juga bahwa setiap pekerjaan berjalan selama 10 detik. Berapa rata-rata turnaround time untuk pekerjaan-pekerjaan ini?
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/4_1.png}
+\caption{Contoh Sederhana FIFO}
+\label{fig:fifo-simple}
+\end{figure}
+
+Dari skenario ini, Anda dapat melihat bahwa A selesai pada 10, B pada 20, dan C pada 30. Jadi, rata-rata turnaround time untuk ketiga pekerjaan ini hanya $\frac{10+20+30}{3} = 20$ detik. Menghitung turnaround time semudah itu.
+
+Sekarang mari kita longgarkan salah satu asumsi kita. Secara khusus, mari kita longgarkan asumsi 1, dan dengan demikian tidak lagi mengasumsikan bahwa setiap pekerjaan berjalan untuk jumlah waktu yang sama. Bagaimana kinerja FIFO sekarang? Jenis beban kerja apa yang bisa Anda buat untuk membuat FIFO berkinerja buruk?
+
+Mungkin Anda sudah mengetahuinya, tetapi untuk berjaga-jaga, mari kita lihat contoh untuk menunjukkan bagaimana pekerjaan dengan panjang berbeda dapat menyebabkan masalah untuk penjadwalan FIFO. Secara khusus, mari kita asumsikan lagi tiga pekerjaan (A, B, dan C), tetapi kali ini A berjalan selama 100 detik sementara B dan C berjalan masing-masing selama 10 detik.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/4_2.png}
+\caption{Mengapa FIFO Tidak Begitu Bagus}
+\label{fig:fifo-bad}
+\end{figure}
+
+Pekerjaan A berjalan lebih dulu selama 100 detik penuh sebelum B atau C bahkan mendapat kesempatan untuk berjalan. Jadi, rata-rata turnaround time untuk sistem adalah tinggi: menyakitkan 110 detik ($\frac{100+110+120}{3} = 110$).
+
+Masalah ini umumnya disebut sebagai efek \textbf{konvoi} (\textit{convoy effect}) [B+79], di mana sejumlah konsumen sumber daya potensial yang relatif pendek mengantri di belakang konsumen sumber daya yang berat. Skenario penjadwalan ini mungkin mengingatkan Anda pada antrian tunggal di toko kelontong dan apa yang Anda rasakan ketika Anda melihat orang di depan Anda dengan tiga troli penuh persediaan dan buku cek keluar; ini akan memakan waktu lama.
+
+\begin{asidebox}{TIP: PRINSIP SJF}
+Shortest Job First mewakili prinsip penjadwalan umum yang dapat diterapkan pada sistem apa pun di mana turnaround time yang dirasakan per pelanggan (atau, dalam kasus kita, sebuah pekerjaan) penting. Pikirkan tentang antrian mana pun yang pernah Anda tunggu: jika perusahaan tersebut peduli dengan kepuasan pelanggan, kemungkinan mereka telah memperhitungkan SJF. Misalnya, toko kelontong biasanya memiliki jalur ``sepuluh-item-atau-kurang'' untuk memastikan bahwa pembeli dengan hanya beberapa barang untuk dibeli tidak terjebak di belakang keluarga yang mempersiapkan diri untuk bencana nuklir.
+\end{asidebox}
+
+\section{Shortest Job First (SJF)}
+Ternyata pendekatan yang sangat sederhana menyelesaikan masalah ini; sebenarnya ini adalah ide yang dicuri dari riset operasi [C54, PV56] dan diterapkan pada penjadwalan pekerjaan dalam sistem komputer. Disiplin penjadwalan baru ini dikenal sebagai \textbf{Shortest Job First (SJF)}, dan namanya seharusnya mudah diingat karena menjelaskan kebijakan dengan cukup lengkap: ia menjalankan pekerjaan terpendek lebih dulu, kemudian yang terpendek berikutnya, dan seterusnya.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/4_3.png}
+\caption{Contoh Sederhana SJF}
+\label{fig:sjf-simple}
+\end{figure}
+
+Mari kita ambil contoh di atas tetapi dengan SJF sebagai kebijakan penjadwalan kita. Dalam skenario ini, B dan C dijalankan sebelum A. Semoga jelas mengapa SJF berkinerja jauh lebih baik dalam hal rata-rata turnaround time. Hanya dengan menjalankan B dan C sebelum A, SJF mengurangi rata-rata turnaround dari 110 detik menjadi 50 detik ($\frac{10+20+120}{3} = 50$), peningkatan lebih dari faktor dua.
+
+Faktanya, dengan asumsi kita tentang pekerjaan yang semuanya tiba pada waktu yang sama, kita bisa membuktikan bahwa SJF memang merupakan algoritma penjadwalan yang \textbf{optimal}. Namun, Anda berada di kelas sistem, bukan teori atau riset operasi; tidak ada bukti yang diperbolehkan.
+
+Jadi kita sampai pada pendekatan yang baik untuk penjadwalan dengan SJF, tetapi asumsi kita masih cukup tidak realistis. Mari kita longgarkan asumsi lain. Secara khusus, kita dapat menargetkan asumsi 2, dan sekarang mengasumsikan bahwa pekerjaan dapat tiba kapan saja alih-alih sekaligus. Masalah apa yang muncul dari ini?
+
+Kita dapat mengilustrasikan masalah lagi dengan sebuah contoh. Kali ini, asumsikan A tiba pada $t = 0$ dan perlu berjalan selama 100 detik, sedangkan B dan C tiba pada $t = 10$ dan masing-masing perlu berjalan selama 10 detik. Dengan SJF murni, A mulai berjalan pada waktu 0 dan berjalan hingga selesai pada 100, lalu B berjalan 100--110, dan C berjalan 110--120.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/4_4.png}
+\caption{SJF Dengan Kedatangan Terlambat dari B dan C}
+\label{fig:sjf-late}
+\end{figure}
+
+\begin{asidebox}{INFO TAMBAHAN: PENJADWAL PREEMPTIVE}
+Pada masa lalu komputasi batch, sejumlah penjadwal \textit{non-preemptive} dikembangkan; sistem semacam itu akan menjalankan setiap pekerjaan sampai selesai sebelum mempertimbangkan apakah akan menjalankan pekerjaan baru. Hampir semua penjadwal modern bersifat \textbf{preemptive}, dan cukup bersedia untuk menghentikan satu proses dari berjalan untuk menjalankan proses lain. Ini menyiratkan bahwa penjadwal menggunakan mekanisme yang kita pelajari sebelumnya; secara khusus, penjadwal dapat melakukan \textit{context switch}, menghentikan sementara satu proses yang berjalan dan melanjutkan (atau memulai) proses lain.
+\end{asidebox}
+
+Seperti yang Anda lihat, meskipun B dan C tiba tak lama setelah A, mereka masih dipaksa menunggu sampai A selesai, dan dengan demikian mengalami masalah konvoi yang sama. Rata-rata turnaround time untuk ketiga pekerjaan ini adalah 103,33 detik ($\frac{100+(110-10)+(120-10)}{3} = 103{,}33$). Apa yang bisa dilakukan penjadwal?
+
+\section{Shortest Time-to-Completion First (STCF)}
+Untuk mengatasi masalah ini, kita perlu melonggarkan asumsi 3 (bahwa pekerjaan harus berjalan sampai selesai). Kita juga membutuhkan beberapa mekanisme dalam penjadwal itu sendiri. Seperti yang mungkin Anda duga, mengingat diskusi kita sebelumnya tentang \textit{timer interrupt} dan \textit{context switching}, penjadwal tentu bisa melakukan sesuatu yang lain ketika B dan C tiba: ia dapat \textbf{mendahului} (\textit{preempt}) pekerjaan A dan memutuskan untuk menjalankan pekerjaan lain, mungkin melanjutkan A nanti. SJF menurut definisi kita adalah penjadwal \textit{non-preemptive}, dan dengan demikian mengalami masalah yang dijelaskan di atas.
+
+Untungnya, ada penjadwal yang melakukan persis itu: menambahkan \textit{preemption} ke SJF, yang dikenal sebagai \textbf{Shortest Time-to-Completion First (STCF)} atau penjadwal \textbf{Preemptive Shortest Job First (PSJF)} [CK68]. Setiap kali pekerjaan baru masuk ke sistem, penjadwal STCF menentukan pekerjaan mana yang tersisa (termasuk pekerjaan baru) yang memiliki waktu tersisa paling sedikit, dan menjadwalkan pekerjaan tersebut. Jadi, dalam contoh kita, STCF akan mendahului A dan menjalankan B dan C sampai selesai; hanya ketika mereka selesai, waktu tersisa A akan dijadwalkan.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/4_5.png}
+\caption{Contoh Sederhana STCF}
+\label{fig:stcf-simple}
+\end{figure}
+
+Hasilnya adalah rata-rata turnaround time yang jauh lebih baik: 50 detik ($\frac{(120-0)+(20-10)+(30-10)}{3} = 50$). Dan seperti sebelumnya, dengan asumsi baru kita, STCF terbukti optimal.
+
+\section{Metrik Baru: Response Time}
+Jadi, jika kita mengetahui panjang pekerjaan, dan bahwa pekerjaan hanya menggunakan CPU, dan satu-satunya metrik kita adalah turnaround time, STCF akan menjadi kebijakan yang hebat. Faktanya, untuk sejumlah sistem komputasi batch awal, jenis algoritma penjadwalan ini masuk akal. Namun, pengenalan mesin \textit{time-shared} mengubah segalanya. Sekarang pengguna akan duduk di terminal dan menuntut kinerja interaktif dari sistem juga. Dan dengan demikian, sebuah metrik baru lahir: \textbf{response time} (waktu respons).
+
+Kita mendefinisikan response time sebagai waktu dari ketika pekerjaan tiba dalam sistem sampai pertama kali dijadwalkan. Secara lebih formal:
+
+\[
+T_{\text{response}} = T_{\text{pertama\_dijadwalkan}} - T_{\text{tiba}}
+\]
+
+Seperti yang mungkin Anda pikirkan, STCF dan disiplin terkait tidak terlalu bagus untuk response time. Jika tiga pekerjaan tiba pada waktu yang sama, misalnya, pekerjaan ketiga harus menunggu dua pekerjaan sebelumnya berjalan secara keseluruhan sebelum dijadwalkan untuk pertama kalinya. Meskipun bagus untuk turnaround time, pendekatan ini cukup buruk untuk response time dan interaktivitas. Memang, bayangkan duduk di terminal, mengetik, dan harus menunggu 10 detik untuk melihat respons dari sistem hanya karena beberapa pekerjaan lain dijadwalkan di depan Anda: tidak terlalu menyenangkan.
+
+Jadi, kita dihadapkan dengan masalah lain: bagaimana kita dapat membangun penjadwal yang sensitif terhadap response time?
+
+\section{Round Robin}
+Untuk memecahkan masalah ini, kita akan memperkenalkan algoritma penjadwalan baru, yang secara klasik disebut sebagai penjadwalan \textbf{Round-Robin (RR)} [K64]. Idenya sederhana: alih-alih menjalankan pekerjaan sampai selesai, RR menjalankan pekerjaan selama \textbf{irisan waktu} (\textit{time slice}, kadang-kadang disebut \textbf{kuantum penjadwalan}) dan kemudian beralih ke pekerjaan berikutnya dalam antrian eksekusi. Ia berulang kali melakukan hal ini sampai pekerjaan-pekerjaan selesai. Untuk alasan ini, RR kadang-kadang disebut \textbf{time-slicing}. Perhatikan bahwa panjang irisan waktu harus merupakan kelipatan dari periode timer-interrupt; jadi jika timer menginterupsi setiap 10 milidetik, irisan waktu bisa 10, 20, atau kelipatan lain dari 10 ms.
+
+Untuk memahami RR secara lebih rinci, mari kita lihat sebuah contoh. Asumsikan tiga pekerjaan A, B, dan C tiba pada waktu yang sama dalam sistem, dan masing-masing ingin berjalan selama 5 detik. Penjadwal SJF menjalankan setiap pekerjaan sampai selesai sebelum menjalankan yang lain (Gambar \ref{fig:sjf-response}). Sebaliknya, RR dengan irisan waktu 1 detik akan berputar melalui pekerjaan dengan cepat: A, B, C, A, B, C, dst (Gambar \ref{fig:rr-response}).
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/4_6.png}
+\caption{SJF Lagi (Buruk Untuk Response Time)}
+\label{fig:sjf-response}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/4_7.png}
+\caption{Round Robin (Baik Untuk Response Time)}
+\label{fig:rr-response}
+\end{figure}
+
+Rata-rata response time RR adalah: $\frac{0+1+2}{3} = 1$ detik; untuk SJF, rata-rata response time adalah: $\frac{0+5+10}{3} = 5$ detik.
+
+Seperti yang Anda lihat, panjang irisan waktu sangat penting untuk RR. Semakin pendek, semakin baik kinerja RR di bawah metrik response-time. Namun, membuat irisan waktu terlalu pendek bermasalah: tiba-tiba biaya \textbf{context switching} akan mendominasi kinerja keseluruhan. Jadi, menentukan panjang irisan waktu menyajikan \textit{trade-off} bagi desainer sistem, membuatnya cukup panjang untuk \textbf{mengamortisasi} biaya peralihan tanpa membuatnya terlalu panjang sehingga sistem tidak lagi responsif.
+
+\begin{asidebox}{TIP: AMORTISASI DAPAT MENGURANGI BIAYA}
+Teknik umum amortisasi biasanya digunakan dalam sistem ketika ada biaya tetap untuk beberapa operasi. Dengan menanggung biaya itu lebih jarang (yaitu, dengan melakukan operasi lebih sedikit kali), total biaya untuk sistem berkurang. Misalnya, jika irisan waktu diatur ke 10 ms, dan biaya context-switch adalah 1 ms, kira-kira 10\% waktu dihabiskan untuk context switching dan dengan demikian terbuang. Jika kita ingin mengamortisasi biaya ini, kita dapat meningkatkan irisan waktu, misalnya, menjadi 100 ms. Dalam kasus ini, kurang dari 1\% waktu yang dihabiskan untuk context switching, dan dengan demikian biaya time-slicing telah diamortisasi.
+\end{asidebox}
+
+Perhatikan bahwa biaya context switching tidak semata-mata muncul dari tindakan OS menyimpan dan mengembalikan beberapa register. Ketika program berjalan, mereka membangun banyak state di cache CPU, TLB, branch predictor, dan perangkat keras on-chip lainnya. Beralih ke pekerjaan lain menyebabkan state ini di-flush dan state baru yang relevan dengan pekerjaan yang sedang berjalan dibawa masuk, yang mungkin memiliki biaya kinerja yang nyata [MB91].
+
+RR, dengan irisan waktu yang wajar, dengan demikian adalah penjadwal yang sangat baik jika response time adalah satu-satunya metrik kita. Tetapi bagaimana dengan turnaround time? Mari kita lihat contoh kita di atas lagi. A, B, dan C, masing-masing dengan waktu eksekusi 5 detik, tiba pada waktu yang sama, dan RR adalah penjadwal dengan irisan waktu 1 detik. Kita dapat melihat bahwa A selesai pada 13, B pada 14, dan C pada 15, untuk rata-rata 14. Cukup buruk!
+
+Tidak mengherankan, RR memang adalah salah satu kebijakan terburuk jika turnaround time adalah metrik kita. Secara intuitif, ini masuk akal: apa yang dilakukan RR adalah meregangkan setiap pekerjaan selama mungkin, dengan hanya menjalankan setiap pekerjaan untuk sebentar sebelum beralih ke yang berikutnya. Karena turnaround time hanya peduli tentang kapan pekerjaan selesai, RR hampir \textbf{pesimal}, bahkan lebih buruk daripada FIFO sederhana dalam banyak kasus.
+
+Secara lebih umum, kebijakan apa pun (seperti RR) yang \textbf{adil}, yaitu yang membagi CPU secara merata di antara proses-proses aktif pada skala waktu kecil, akan berkinerja buruk pada metrik seperti turnaround time. Memang, ini adalah \textit{trade-off} yang melekat: jika Anda bersedia untuk tidak adil, Anda dapat menjalankan pekerjaan yang lebih pendek sampai selesai, tetapi biayanya adalah response time; jika sebaliknya Anda menghargai keadilan, response time akan berkurang, tetapi biayanya adalah turnaround time.
+
+Kita telah mengembangkan dua jenis penjadwal. Jenis pertama (SJF, STCF) mengoptimalkan turnaround time, tetapi buruk untuk response time. Jenis kedua (RR) mengoptimalkan response time tetapi buruk untuk turnaround time. Dan kita masih memiliki dua asumsi yang perlu dilonggarkan: asumsi 4 (bahwa pekerjaan tidak melakukan I/O), dan asumsi 5 (bahwa waktu eksekusi setiap pekerjaan diketahui). Mari kita tangani asumsi-asumsi tersebut selanjutnya.
+
+\section{Menggabungkan I/O}
+Pertama kita akan melonggarkan asumsi 4 --- tentu saja semua program melakukan I/O. Bayangkan program yang tidak menerima input apa pun: ia akan menghasilkan output yang sama setiap kali. Bayangkan program tanpa output: ia adalah pepatah pohon yang jatuh di hutan, tanpa ada yang melihatnya; tidak masalah bahwa ia berjalan.
+
+Seorang penjadwal jelas memiliki keputusan yang harus dibuat ketika sebuah pekerjaan memulai permintaan I/O, karena pekerjaan yang sedang berjalan tidak akan menggunakan CPU selama I/O; ia \textbf{terblokir} menunggu penyelesaian I/O. Jika I/O dikirim ke hard disk drive, proses mungkin terblokir selama beberapa milidetik atau lebih, tergantung pada beban I/O drive saat ini. Jadi, penjadwal mungkin harus menjadwalkan pekerjaan lain pada CPU pada saat itu.
+
+Penjadwal juga harus membuat keputusan ketika I/O selesai. Ketika itu terjadi, sebuah interupsi dimunculkan, dan OS berjalan dan memindahkan proses yang mengeluarkan I/O dari terblokir kembali ke keadaan siap. Tentu saja, ia bahkan bisa memutuskan untuk menjalankan pekerjaan tersebut pada saat itu.
+
+Untuk memahami masalah ini lebih baik, mari kita asumsikan kita memiliki dua pekerjaan, A dan B, yang masing-masing membutuhkan 50 ms waktu CPU. Namun, ada satu perbedaan yang jelas: A berjalan selama 10 ms dan kemudian mengeluarkan permintaan I/O (asumsikan di sini bahwa setiap I/O membutuhkan 10 ms), sedangkan B hanya menggunakan CPU selama 50 ms dan tidak melakukan I/O.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/4_8.png}
+\caption{Penggunaan Sumber Daya yang Buruk}
+\label{fig:io-poor}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/4_9.png}
+\caption{Overlap Memungkinkan Penggunaan Sumber Daya yang Lebih Baik}
+\label{fig:io-overlap}
+\end{figure}
+
+Pendekatan umum adalah memperlakukan setiap sub-pekerjaan 10 ms dari A sebagai pekerjaan independen. Jadi, ketika sistem dimulai, pilihannya adalah apakah akan menjadwalkan A 10 ms atau B 50 ms. Dengan STCF, pilihannya jelas: pilih yang lebih pendek, dalam kasus ini A. Kemudian, ketika sub-pekerjaan pertama A selesai, hanya B yang tersisa, dan ia mulai berjalan. Kemudian sub-pekerjaan baru A diajukan, dan ia mendahului B dan berjalan selama 10 ms. Melakukan hal ini memungkinkan \textbf{tumpang tindih} (\textit{overlap}), dengan CPU digunakan oleh satu proses sementara menunggu I/O proses lain selesai; sistem dengan demikian digunakan dengan lebih baik (lihat Gambar \ref{fig:io-overlap}).
+
+\begin{asidebox}{TIP: OVERLAP MEMUNGKINKAN PEMANFAATAN LEBIH TINGGI}
+Ketika memungkinkan, tumpang tindihkan operasi untuk memaksimalkan pemanfaatan sistem. Overlap berguna di banyak domain yang berbeda, termasuk ketika melakukan disk I/O atau mengirim pesan ke mesin jarak jauh; dalam kedua kasus tersebut, memulai operasi dan kemudian beralih ke pekerjaan lain adalah ide yang bagus, dan meningkatkan pemanfaatan dan efisiensi keseluruhan sistem.
+\end{asidebox}
+
+Dan dengan demikian kita melihat bagaimana penjadwal mungkin menggabungkan I/O. Dengan memperlakukan setiap \textit{CPU burst} sebagai pekerjaan, penjadwal memastikan proses-proses yang ``interaktif'' dijalankan secara sering. Sementara pekerjaan-pekerjaan interaktif tersebut melakukan I/O, pekerjaan CPU-intensif lainnya berjalan, sehingga memanfaatkan prosesor dengan lebih baik.
+
+\section{Tidak Lagi Maha Tahu}
+Dengan pendekatan dasar terhadap I/O sudah ada, kita sampai pada asumsi terakhir kita: bahwa penjadwal mengetahui panjang setiap pekerjaan. Seperti yang kita katakan sebelumnya, ini kemungkinan adalah asumsi terburuk yang bisa kita buat. Faktanya, dalam OS serbaguna (seperti yang kita pedulikan), OS biasanya tahu sangat sedikit tentang panjang setiap pekerjaan. Jadi, bagaimana kita dapat membangun pendekatan yang berperilaku seperti SJF/STCF tanpa pengetahuan \textit{a priori} seperti itu? Lebih lanjut, bagaimana kita dapat menggabungkan beberapa ide yang telah kita lihat dengan penjadwal RR sehingga response time juga cukup baik?
+
+\section{Ringkasan}
+Kita telah memperkenalkan ide-ide dasar di balik penjadwalan dan mengembangkan dua keluarga pendekatan. Yang pertama menjalankan pekerjaan terpendek yang tersisa dan dengan demikian mengoptimalkan turnaround time; yang kedua bergantian antara semua pekerjaan dan dengan demikian mengoptimalkan response time. Keduanya buruk di tempat yang lain bagus, sayangnya, sebuah \textit{trade-off} yang melekat yang umum dalam sistem. Kita juga telah melihat bagaimana kita mungkin menggabungkan I/O ke dalam gambaran, tetapi masih belum memecahkan masalah ketidakmampuan mendasar OS untuk melihat ke masa depan. Segera, kita akan melihat bagaimana mengatasi masalah ini, dengan membangun penjadwal yang menggunakan masa lalu terkini untuk memprediksi masa depan. Penjadwal ini dikenal sebagai \textbf{multi-level feedback queue}, dan merupakan topik bab berikutnya.
+
+\section*{Referensi}
+\begin{itemize}
+    \item {[B+79]} ``The Convoy Phenomenon'' oleh M. Blasgen, J. Gray, M. Mitoma, T. Price. ACM Operating Systems Review, 13:2, April 1979.
+    \item {[C54]} ``Priority Assignment in Waiting Line Problems'' oleh A. Cobham. Journal of Operations Research, 2:70, hlm. 70--76, 1954.
+    \item {[K64]} ``Analysis of a Time-Shared Processor'' oleh Leonard Kleinrock. Naval Research Logistics Quarterly, 11:1, hlm. 59--73, Maret 1964.
+    \item {[CK68]} ``Computer Scheduling Methods and their Countermeasures'' oleh Edward G. Coffman dan Leonard Kleinrock. AFIPS '68 (Spring), April 1968.
+    \item {[J91]} ``The Art of Computer Systems Performance Analysis'' oleh R. Jain. Interscience, New York, April 1991.
+    \item {[O45]} ``Animal Farm'' oleh George Orwell. Secker and Warburg (London), 1945.
+    \item {[PV56]} ``Machine Repair as a Priority Waiting-Line Problem'' oleh Thomas E. Phipps Jr., W. R. Van Voorhis. Operations Research, 4:1, hlm. 76--86, Februari 1956.
+    \item {[MB91]} ``The effect of context switches on cache performance'' oleh Jeffrey C. Mogul, Anita Borg. ASPLOS, 1991.
+\end{itemize}
+
+\section*{Pekerjaan Rumah (Simulasi)}
+Program \texttt{scheduler.py} memungkinkan Anda melihat bagaimana penjadwal yang berbeda berkinerja di bawah metrik penjadwalan seperti response time, turnaround time, dan total waktu tunggu. Lihat README untuk detailnya.
+
+\textbf{Pertanyaan}
+\begin{enumerate}
+    \item Hitung response time dan turnaround time saat menjalankan tiga pekerjaan dengan panjang 200 menggunakan penjadwal SJF dan FIFO.
+    \item Sekarang lakukan hal yang sama tetapi dengan pekerjaan yang panjangnya berbeda: 100, 200, dan 300.
+    \item Sekarang lakukan hal yang sama, tetapi juga dengan penjadwal RR dan irisan waktu 1.
+    \item Untuk jenis beban kerja apa SJF memberikan turnaround time yang sama dengan FIFO?
+    \item Untuk jenis beban kerja dan panjang kuantum apa SJF memberikan response time yang sama dengan RR?
+    \item Apa yang terjadi pada response time dengan SJF seiring panjang pekerjaan meningkat? Bisakah Anda menggunakan simulator untuk mendemonstrasikan tren tersebut?
+    \item Apa yang terjadi pada response time dengan RR seiring panjang kuantum meningkat? Bisakah Anda menulis persamaan yang memberikan response time kasus terburuk, diberikan $N$ pekerjaan?
+\end{enumerate}

@@ -1,0 +1,1064 @@
+%================================================
+%\tPACKAGES AND THEMES
+%================================================
+\documentclass[t,aspectratio=169,xcolor=dvipsnames]{beamer}
+
+\usetheme{SimplePlusAIC}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{svg}
+\usepackage{tcolorbox}
+\usepackage{tikz}
+\usepackage{makecell}
+
+\newcommand*{\defeq}{\stackrel{\text{def}}{=}}
+\usepackage{setspace}
+\usepackage[T1]{fontenc}
+\usepackage{helvet}
+\usepackage{textgreek}
+\usepackage{amsmath}
+\usepackage{bm}
+\usepackage{ragged2e}
+\usepackage{xfrac}
+\usepackage[loose]{units}
+\usepackage{braket}
+\usepackage{physics}
+\usepackage{gensymb}
+\usepackage{verbatim}
+\usepackage{fancyvrb}
+
+\usepackage[svgnames,table]{xcolor}
+\arrayrulecolor{black}
+\setlength{\arrayrulewidth}{0.20mm}
+\renewcommand{\arraystretch}{1.35}
+
+
+\newcommand{\tem}[1]{\textbf{\textcolor{red}{#1}}}
+
+%================================================
+%\tTITLE PAGE
+%================================================
+\title[CPU Scheduling]{CPU Scheduling}
+\subtitle{Week 3: Penjadwalan CPU --- FIFO, SJF, RR, dan MLFQ}
+\author[lectura.id/course/os]{lectura.id/course/os}
+\institute[ITERA]{Program Studi Teknik Informatika \\ Institut Teknologi Sumatera}
+\date{\textcolor{nyublue}{2026}}
+
+%================================================
+%\tBEGIN DOCUMENT
+%================================================
+\begin{document}
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+\begin{frame}
+    \frametitle{OUTLINE}
+    \framesubtitle{Peta materi pertemuan ini}
+    \small
+    \begin{spacing}{1.15}
+        \tableofcontents
+    \end{spacing}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Capaian Pembelajaran}
+    \framesubtitle{Kemampuan yang ditargetkan setelah kuliah}
+    \small
+    \begin{enumerate}
+        \item Memahami mengapa CPU perlu dijadwalkan
+        \item Mengenal metrik penjadwalan: turnaround time dan response time
+        \item Menjelaskan algoritma FIFO, SJF, STCF, dan Round Robin
+        \item Memahami trade-off antara turnaround time dan response time
+        \item Menjelaskan cara kerja Multi-Level Feedback Queue (MLFQ)
+        \item Menganalisis masalah starvation, gaming, dan solusinya
+    \end{enumerate}
+    \begin{exampleblock}{Target Akhir}
+        Setelah pertemuan ini, mahasiswa mampu membandingkan algoritma penjadwalan dan memahami mengapa MLFQ menjadi solusi \tem{praktis} di OS modern.
+    \end{exampleblock}
+\end{frame}
+
+%================================================
+% PART 1: SCHEDULING INTRODUCTION
+%================================================
+
+\section{Mengapa CPU Perlu Dijadwalkan?}
+
+\begin{frame}
+    \frametitle{Mengapa Perlu Penjadwalan?}
+    \framesubtitle{Masalah mendasar di balik scheduler}
+    \small
+    Bayangkan sebuah kedai kopi dengan \textbf{satu barista} dan \textbf{banyak pelanggan}.
+    \begin{enumerate}
+        \item Siapa yang dilayani duluan?
+        \item Apakah pelanggan dengan pesanan kecil harus menunggu pelanggan dengan pesanan besar?
+        \item Bagaimana agar semua merasa dilayani dengan adil?
+    \end{enumerate}
+    \begin{alertblock}{Inti Masalah}
+        CPU itu seperti barista tunggal. \tem{Scheduler} adalah aturan antrian yang memutuskan proses mana yang dijalankan berikutnya.
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Kebijakan vs Mekanisme}
+    \framesubtitle{Dua level keputusan penjadwalan}
+    \small
+    \begin{columns}[T]
+        \column{0.49\textwidth}
+        \textbf{Mekanisme (HOW)}
+        \begin{enumerate}
+            \item Context switch
+            \item Timer interrupt
+            \item Trap ke kernel
+        \end{enumerate}
+        \column{0.49\textwidth}
+        \textbf{Kebijakan (WHAT)}
+        \begin{enumerate}
+            \item Proses mana yang jalan duluan?
+            \item Berapa lama giliran tiap proses?
+            \item Kapan proses dihentikan paksa?
+        \end{enumerate}
+    \end{columns}
+    \begin{block}{Hubungan Keduanya}
+        Minggu lalu kita belajar \tem{mekanisme} (context switch, mode kernel). Sekarang kita belajar \tem{kebijakan} penjadwalan.
+    \end{block}
+\end{frame}
+
+\section{Asumsi dan Metrik Penjadwalan}
+
+\begin{frame}
+    \frametitle{Asumsi Beban Kerja}
+    \framesubtitle{Penyederhanaan agar mudah dipahami}
+    \small
+    Untuk memahami algoritma secara bertahap, kita mulai dengan 5 asumsi (yang nanti akan kita longgarkan satu per satu):
+    \begin{enumerate}
+        \item Setiap pekerjaan berjalan dalam durasi yang \textbf{sama}
+        \item Semua pekerjaan \textbf{tiba bersamaan}
+        \item Pekerjaan \textbf{tidak bisa dihentikan} di tengah (non-preemptive)
+        \item Semua pekerjaan \textbf{hanya pakai CPU} (tidak ada I/O)
+        \item Durasi setiap pekerjaan \textbf{sudah diketahui}
+    \end{enumerate}
+    \begin{exampleblock}{Kenapa Asumsi Ini Penting?}
+        Dengan asumsi sederhana, kita bisa menganalisis algoritma secara \tem{matematis}. Setelah paham, kita longgarkan asumsinya.
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Metrik: Turnaround Time}
+    \framesubtitle{Mengukur seberapa cepat pekerjaan selesai}
+    \small
+    \begin{block}{Definisi Formal}
+        $$T_{\text{turnaround}} = T_{\text{selesai}} - T_{\text{tiba}}$$
+    \end{block}
+    \vspace{0.2cm}
+    \textbf{Analogi:} Turnaround time pesanan kopi = waktu kopi jadi \textbf{dikurangi} waktu Anda pesan.
+
+    \vspace{0.2cm}
+    \begin{enumerate}
+        \item Nilai makin \textbf{kecil} = makin \textbf{bagus}
+        \item Jika semua tiba di waktu 0, maka turnaround = waktu selesai
+        \item Ini adalah metrik \tem{kinerja} (bukan keadilan)
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Metrik: Response Time}
+    \framesubtitle{Mengukur seberapa cepat pekerjaan mendapat giliran pertama}
+    \small
+    \begin{block}{Definisi Formal}
+        $$T_{\text{response}} = T_{\text{pertama\ dijadwalkan}} - T_{\text{tiba}}$$
+    \end{block}
+    \vspace{0.2cm}
+    \textbf{Analogi:} Response time = waktu barista \textbf{pertama kali menyapa} Anda setelah Anda datang.
+
+    \vspace{0.2cm}
+    \begin{enumerate}
+        \item Penting untuk sistem \tem{interaktif} (terminal, GUI, game)
+        \item Berbeda dari turnaround: response hanya soal ``kapan mulai dilayani''
+        \item Turnaround time bisa bagus tapi response time buruk (atau sebaliknya!)
+    \end{enumerate}
+\end{frame}
+
+\section{Algoritma Penjadwalan Dasar}
+
+\begin{frame}
+    \frametitle{FIFO (First In, First Out)}
+    \framesubtitle{Algoritma paling sederhana: siapa datang duluan, dilayani duluan}
+    \small
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        Tiga pekerjaan: A, B, C --- masing-masing 10 detik.
+        
+        \vspace{0.1cm}
+        Rata-rata turnaround:
+        $$\frac{10+20+30}{3} = 20 \text{ detik}$$
+
+        Sederhana dan adil --- \textbf{selama} semua pekerjaan sama panjangnya!
+        \column{0.42\textwidth}
+        \begin{center}
+            \includegraphics[width=\textwidth,keepaspectratio]{figures/4_1.png}
+        \end{center}
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Masalah FIFO: Convoy Effect}
+    \framesubtitle{Pekerjaan pendek terjebak di belakang pekerjaan besar}
+    \small
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        A = 100 detik, B = C = 10 detik.
+
+        \vspace{0.1cm}
+        Rata-rata turnaround:
+        $$\frac{100+110+120}{3} = 110 \text{ detik}$$
+
+        \vspace{0.1cm}
+        Seperti antri di kasir: satu orang dengan troli penuh membuat semua orang menunggu lama!
+        \column{0.42\textwidth}
+        \begin{center}
+            \includegraphics[width=\textwidth,keepaspectratio]{figures/4_2.png}
+        \end{center}
+    \end{columns}
+    \begin{alertblock}{Convoy Effect}
+        Pekerjaan pendek ``terkonvoi'' di belakang pekerjaan besar. Turnaround meledak!
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Latihan: FIFO}
+    \framesubtitle{Uji pemahaman Anda tentang FIFO dan convoy effect}
+    \small
+    \begin{block}{Soal}
+        Tiga proses tiba bersamaan di $t=0$ dengan durasi: P1 = 8 detik, P2 = 4 detik, P3 = 2 detik. Urutan kedatangan adalah P1, P2, P3.
+
+        \vspace{0.1cm}
+        Dengan algoritma \textbf{FIFO}, hitung:
+        \begin{enumerate}
+            \item Turnaround time masing-masing proses
+            \item Rata-rata turnaround time
+            \item Apakah terjadi convoy effect? Jelaskan!
+        \end{enumerate}
+    \end{block}
+    \begin{exampleblock}{Petunjuk}
+        Ingat: FIFO menjalankan proses sesuai urutan kedatangan, tanpa menyela.
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Jawaban: FIFO}
+    \framesubtitle{Pembahasan soal latihan FIFO}
+    \small
+    Urutan eksekusi: P1 (0--8), P2 (8--12), P3 (12--14)
+
+    \vspace{0.1cm}
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        \textbf{Proses} & \textbf{Durasi} & \textbf{Selesai} & \textbf{Turnaround} \\
+        \hline
+        P1 & 8 & 8 & 8 \\
+        \hline
+        P2 & 4 & 12 & 12 \\
+        \hline
+        P3 & 2 & 14 & 14 \\
+        \hline
+    \end{tabular}
+
+    \vspace{0.1cm}
+    $$\text{Rata-rata turnaround} = \frac{8+12+14}{3} \approx 11.3 \text{ detik}$$
+
+    \begin{alertblock}{Convoy Effect: Ya!}
+        P3 (hanya 2 detik) harus menunggu 12 detik sebelum jalan, karena terjebak di belakang P1 yang panjang. Jika urutan dibalik (P3, P2, P1), rata-rata turnaround hanya $\frac{2+6+14}{3} \approx 7.3$ detik.
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{SJF (Shortest Job First)}
+    \framesubtitle{Jalankan pekerjaan terpendek terlebih dahulu}
+    \small
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        Ide: B dan C (10 detik) dijalankan \textbf{sebelum} A (100 detik).
+
+        \vspace{0.1cm}
+        Rata-rata turnaround:
+        $$\frac{10+20+120}{3} = 50 \text{ detik}$$
+
+        \vspace{0.1cm}
+        Turun drastis dari 110 menjadi 50! Seperti kasir supermarket yang punya jalur ``10 item atau kurang''.
+        \column{0.42\textwidth}
+        \begin{center}
+            \includegraphics[width=\textwidth,keepaspectratio]{figures/4_3.png}
+        \end{center}
+    \end{columns}
+    \begin{exampleblock}{Fakta Menarik}
+        SJF \tem{optimal} untuk turnaround time --- selama semua pekerjaan tiba bersamaan.
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Masalah SJF: Pekerjaan Tidak Selalu Tiba Bersamaan}
+    \framesubtitle{Apa yang terjadi jika pekerjaan pendek datang terlambat?}
+    \small
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        A tiba di $t=0$ (100 detik). B dan C tiba di $t=10$ (masing-masing 10 detik).
+
+        \vspace{0.1cm}
+        A sudah berjalan $\rightarrow$ B dan C harus menunggu A selesai!
+
+        \vspace{0.1cm}
+        Rata-rata turnaround:
+        $$\frac{100+100+110}{3} \approx 103 \text{ detik}$$
+        \column{0.42\textwidth}
+        \begin{center}
+            \includegraphics[width=\textwidth,keepaspectratio]{figures/4_4.png}
+        \end{center}
+    \end{columns}
+    \begin{alertblock}{Masalah Inti}
+        SJF bersifat \tem{non-preemptive}: sekali A mulai, tidak bisa dihentikan meskipun ada pekerjaan lebih pendek.
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{STCF: SJF + Preemption}
+    \framesubtitle{Selalu jalankan pekerjaan dengan sisa waktu terpendek}
+    \small
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        Ketika B dan C tiba di $t=10$, penjadwal \textbf{mendahului A} dan menjalankan B dan C dulu.
+
+        \vspace{0.1cm}
+        Rata-rata turnaround:
+        $$\frac{120+10+20}{3} = 50 \text{ detik}$$
+
+        \vspace{0.1cm}
+        Jauh lebih baik! Preemption memungkinkan penjadwal ``menyela'' pekerjaan yang sedang berjalan.
+        \column{0.42\textwidth}
+        \begin{center}
+            \includegraphics[width=\textwidth,keepaspectratio]{figures/4_5.png}
+        \end{center}
+    \end{columns}
+    \begin{block}{STCF = Shortest Time-to-Completion First}
+        Juga dikenal sebagai PSJF (Preemptive SJF). Optimal untuk turnaround time.
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Latihan: SJF dan STCF}
+    \framesubtitle{Uji pemahaman Anda tentang SJF vs STCF}
+    \small
+    \begin{block}{Soal}
+        Tiga proses dengan waktu tiba dan durasi berikut:
+        \begin{itemize}
+            \item P1: tiba di $t=0$, durasi = 12 detik
+            \item P2: tiba di $t=3$, durasi = 5 detik
+            \item P3: tiba di $t=5$, durasi = 3 detik
+        \end{itemize}
+
+        \vspace{0.1cm}
+        Hitung rata-rata turnaround time jika menggunakan:
+        \begin{enumerate}
+            \item SJF (non-preemptive)
+            \item STCF (preemptive)
+        \end{enumerate}
+    \end{block}
+    \begin{exampleblock}{Petunjuk}
+        SJF: proses yang sudah jalan tidak bisa disela. STCF: proses bisa disela jika ada proses baru dengan sisa waktu lebih pendek.
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Jawaban: SJF dan STCF}
+    \framesubtitle{Perbandingan non-preemptive vs preemptive}
+    \footnotesize
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \textbf{SJF (non-preemptive):}\\
+        P1 sudah jalan sejak $t=0$, tidak bisa disela.
+
+        \vspace{0.1cm}
+        Urutan: P1 (0--12), P3 (12--15), P2 (15--20)
+        $$\text{Rata-rata} = \frac{12+17+10}{3} = 13 \text{ dtk}$$
+
+        \column{0.48\textwidth}
+        \textbf{STCF (preemptive):}\\
+        P1 disela saat proses lebih pendek tiba.
+
+        \vspace{0.1cm}
+        Urutan: P1(0--3), P2(3--8), P3(8--11), P1(11--20)
+        \vspace{0.05cm}
+        \begin{tabular}{|c|c|c|c|}
+            \hline
+            \textbf{P} & \textbf{Tiba} & \textbf{Selesai} & \textbf{TA} \\
+            \hline
+            P1 & 0 & 20 & 20 \\
+            \hline
+            P2 & 3 & 8 & 5 \\
+            \hline
+            P3 & 5 & 11 & 6 \\
+            \hline
+        \end{tabular}
+        $$\text{Rata-rata} = \frac{20+5+6}{3} \approx 10.3 \text{ dtk}$$
+    \end{columns}
+    \begin{block}{Kesimpulan}
+        STCF (10.3 dtk) lebih baik dari SJF (13 dtk) karena preemption memungkinkan proses pendek selesai lebih cepat.
+    \end{block}
+\end{frame}
+
+\section{Trade-off: Turnaround vs Response}
+
+\begin{frame}
+    \frametitle{Masalah STCF: Response Time Buruk}
+    \framesubtitle{Optimal turnaround $\neq$ optimal response}
+    \small
+    Bayangkan 3 pekerjaan tiba bersamaan (A, B, C --- masing-masing 5 detik). Dengan SJF:
+    \begin{enumerate}
+        \item A mulai di $t=0$ $\rightarrow$ response = 0
+        \item B harus tunggu A selesai $\rightarrow$ response = 5
+        \item C harus tunggu A dan B $\rightarrow$ response = 10
+    \end{enumerate}
+
+    \begin{center}
+        \includegraphics[height=0.2\textheight,keepaspectratio]{figures/4_6.png}
+    \end{center}
+
+    \begin{alertblock}{Rata-rata Response Time}
+        $\frac{0+5+10}{3} = 5$ detik. Pengguna di terminal ketiga harus menunggu 10 detik sebelum melihat respons!
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Round Robin: Giliran Berputar}
+    \framesubtitle{Tiap pekerjaan dapat irisan waktu (time slice) yang sama}
+    \small
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        RR dengan irisan waktu 1 detik: A, B, C, A, B, C, A, B, C, \ldots
+
+        \vspace{0.2cm}
+        Rata-rata response time:
+        $$\frac{0+1+2}{3} = 1 \text{ detik}$$
+
+        \vspace{0.1cm}
+        Jauh lebih baik dari SJF (5 detik)! Semua proses mendapat giliran \textbf{dengan cepat}.
+        \column{0.42\textwidth}
+        \begin{center}
+            \includegraphics[width=\textwidth,keepaspectratio]{figures/4_7.png}
+        \end{center}
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Trade-off RR: Turnaround Time Buruk}
+    \framesubtitle{Keadilan mengakibatkan penyelesaian lambat}
+    \small
+    RR meregangkan semua pekerjaan --- selesai hampir bersamaan, bukan satu per satu.
+
+    \vspace{0.2cm}
+    \begin{tabular}{|p{0.38\textwidth}|c|c|}
+        \hline
+        \textbf{Metrik} & \textbf{SJF} & \textbf{RR (ts=1s)} \\
+        \hline
+        Rata-rata response time & 5 detik & \tem{1 detik} \\
+        \hline
+        Rata-rata turnaround time & \tem{10 detik} & 14 detik \\
+        \hline
+    \end{tabular}
+
+    \vspace{0.2cm}
+    \begin{alertblock}{Trade-off Mendasar}
+        \tem{Adil} (RR) $\rightarrow$ response bagus, turnaround buruk.\\
+        \tem{Prioritas pendek dulu} (SJF) $\rightarrow$ turnaround bagus, response buruk.\\
+        Tidak ada satu penjadwal yang sempurna untuk keduanya!
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Ukuran Time Slice Penting!}
+    \framesubtitle{Terlalu pendek atau terlalu panjang sama-sama bermasalah}
+    \small
+    \begin{columns}[T]
+        \column{0.49\textwidth}
+        \textbf{Time slice terlalu pendek}
+        \begin{enumerate}
+            \item Response time sangat baik
+            \item Tapi overhead context switch tinggi
+            \item CPU sibuk ``administrasi'' bukan kerja nyata
+        \end{enumerate}
+        \column{0.49\textwidth}
+        \textbf{Time slice terlalu panjang}
+        \begin{enumerate}
+            \item Overhead rendah
+            \item Tapi response time memburuk
+            \item Jika sangat panjang, mirip FIFO!
+        \end{enumerate}
+    \end{columns}
+    \begin{block}{Prinsip Amortisasi}
+        Pilih time slice cukup panjang agar biaya context switch \tem{teramortisasi}, tapi cukup pendek agar sistem tetap responsif. Contoh: 10--100 ms.
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Latihan: Round Robin}
+    \framesubtitle{Uji pemahaman Anda tentang Round Robin}
+    \small
+    \begin{block}{Soal}
+        Empat proses tiba bersamaan di $t=0$ dengan durasi: P1 = 6, P2 = 3, P3 = 1, P4 = 4 detik. Time slice = 2 detik.
+
+        \vspace{0.1cm}
+        Dengan algoritma \textbf{Round Robin (time slice = 2 detik)}, hitung:
+        \begin{enumerate}
+            \item Response time masing-masing proses
+            \item Rata-rata response time
+            \item Rata-rata turnaround time
+        \end{enumerate}
+    \end{block}
+    \begin{exampleblock}{Petunjuk}
+        Urutan RR: P1, P2, P3, P4, P1, P2, P4, P1. Jika proses selesai sebelum habis time slice, langsung lanjut ke proses berikutnya.
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Jawaban: Round Robin}
+    \framesubtitle{Pembahasan soal latihan RR}
+    \scriptsize
+    Time slice = 2 detik. Urutan: P1(2), P2(2), P3(1), P4(2), P1(2), P2(1), P4(2), P1(2)
+
+    \vspace{0.1cm}
+    \begin{tabular}{|c|c|c|c|c|c|}
+        \hline
+        \textbf{Proses} & \textbf{Durasi} & \textbf{Mulai} & \textbf{Response} & \textbf{Selesai} & \textbf{Turnaround} \\
+        \hline
+        P1 & 6 & 0 & 0 & 14 & 14 \\
+        \hline
+        P2 & 3 & 2 & 2 & 11 & 11 \\
+        \hline
+        P3 & 1 & 4 & 4 & 5 & 5 \\
+        \hline
+        P4 & 4 & 5 & 5 & 13 & 13 \\
+        \hline
+    \end{tabular}
+
+    \vspace{0.1cm}
+    $$\text{Rata-rata response} = \frac{0+2+4+5}{4} = 2.75 \text{ detik}$$
+    $$\text{Rata-rata turnaround} = \frac{14+11+5+13}{4} = 10.75 \text{ detik}$$
+
+    \begin{alertblock}{Perhatikan Trade-off!}
+        Response time sangat baik (2.75 dtk), tapi turnaround buruk (10.75 dtk) --- semua proses selesai ``hampir bersamaan'' karena RR meregangkan eksekusi.
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Ringkasan Algoritma Dasar}
+    \framesubtitle{Perbandingan empat algoritma yang sudah dibahas}
+    \small
+    \begin{tabular}{|p{0.15\textwidth}|p{0.18\textwidth}|p{0.18\textwidth}|p{0.25\textwidth}|}
+        \hline
+        \textbf{Algoritma} & \textbf{Turnaround} & \textbf{Response} & \textbf{Catatan} \\
+        \hline
+        FIFO & Buruk (convoy) & Buruk & Sangat sederhana \\
+        \hline
+        SJF & \tem{Optimal}* & Buruk & Non-preemptive \\
+        \hline
+        STCF & \tem{Optimal} & Buruk & Preemptive SJF \\
+        \hline
+        RR & Buruk & \tem{Baik} & Adil, time-slicing \\
+        \hline
+    \end{tabular}
+
+    \vspace{0.1cm}
+    * Optimal jika semua tiba bersamaan
+
+    \begin{exampleblock}{Pertanyaan Besar}
+        Bisakah kita membangun penjadwal yang bagus di \tem{kedua} metrik, tanpa harus tahu durasi pekerjaan?
+    \end{exampleblock}
+\end{frame}
+
+\section{Menggabungkan I/O}
+
+\begin{frame}
+    \frametitle{Pekerjaan Tidak Selalu Hanya Pakai CPU}
+    \framesubtitle{Menangani proses yang melakukan I/O}
+    \small
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        Contoh: Job A (50 ms CPU, tapi setiap 10 ms melakukan I/O 10 ms) dan Job B (50 ms CPU, tanpa I/O).
+
+        \vspace{0.2cm}
+        \textbf{Tanpa optimasi:} CPU menganggur saat A menunggu I/O.
+        \column{0.42\textwidth}
+        \begin{center}
+            \includegraphics[width=\textwidth,keepaspectratio]{figures/4_8.png}
+        \end{center}
+    \end{columns}
+    \begin{alertblock}{Masalah}
+        Jika penjadwal tidak bijak, CPU akan \tem{menganggur} sia-sia saat proses menunggu I/O!
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Overlap: Gunakan CPU Saat Proses Lain Menunggu I/O}
+    \framesubtitle{Tumpang tindih kerja CPU dan I/O}
+    \small
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        \textbf{Solusi:} Perlakukan setiap ``burst'' CPU sebagai sub-pekerjaan independen.
+
+        \vspace{0.2cm}
+        Saat A menunggu I/O, B menggunakan CPU.\\
+        Saat I/O A selesai, A kembali mendahului B (STCF).
+
+        \vspace{0.1cm}
+        $\rightarrow$ CPU dan disk keduanya sibuk = \tem{utilisasi tinggi}!
+        \column{0.42\textwidth}
+        \begin{center}
+            \includegraphics[width=\textwidth,keepaspectratio]{figures/4_9.png}
+        \end{center}
+    \end{columns}
+    \begin{exampleblock}{Prinsip Overlap}
+        Tumpang tindihkan operasi CPU dan I/O untuk memaksimalkan pemanfaatan sumber daya.
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Apa yang Masih Kurang?}
+    \framesubtitle{Mengapa algoritma-algoritma tadi belum cukup}
+    \small
+    \begin{enumerate}
+        \item SJF/STCF butuh tahu \textbf{durasi pekerjaan} $\rightarrow$ di dunia nyata, ini \tem{mustahil}!
+        \item RR bagus untuk response, tapi turnaround buruk
+        \item Bagaimana kalau kita ingin \textbf{keduanya} tanpa pengetahuan \textit{a priori}?
+    \end{enumerate}
+
+    \vspace{0.2cm}
+    \begin{block}{Jawabannya: MLFQ}
+        Multi-Level Feedback Queue (MLFQ) = penjadwal yang \tem{belajar dari perilaku} proses untuk membuat keputusan yang cerdas.
+    \end{block}
+\end{frame}
+
+%================================================
+% PART 2: MLFQ
+%================================================
+
+\section{Multi-Level Feedback Queue (MLFQ)}
+
+\begin{frame}
+    \frametitle{Ide Utama MLFQ}
+    \framesubtitle{Belajar dari perilaku masa lalu untuk memprediksi masa depan}
+    \footnotesize
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        \begin{enumerate}\itemsep0.05em
+            \item Banyak antrian dengan tingkat \textbf{prioritas} berbeda
+            \item Proses baru dianggap ``pendek'' $\rightarrow$ prioritas tinggi
+            \item Jika proses terus pakai CPU lama $\rightarrow$ prioritas turun
+            \item Jika proses sering lepas CPU (I/O) $\rightarrow$ prioritas tetap tinggi
+        \end{enumerate}
+        \column{0.42\textwidth}
+        \begin{center}
+            \includegraphics[width=0.75\textwidth,keepaspectratio]{figures/5_1.png}
+        \end{center}
+    \end{columns}
+    \vspace{-0.1cm}
+    \begin{block}{Filosofi MLFQ}
+        Tidak perlu tahu durasi pekerjaan! MLFQ mengamati perilaku dan \tem{menyesuaikan} prioritas secara otomatis.
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Dua Aturan Dasar MLFQ}
+    \framesubtitle{Rules 1 \& 2: Prioritas menentukan segalanya}
+    \small
+    \begin{alertblock}{Aturan 1}
+        Jika Priority(A) $>$ Priority(B), maka A berjalan (B tidak).
+    \end{alertblock}
+    \begin{alertblock}{Aturan 2}
+        Jika Priority(A) $=$ Priority(B), maka A dan B bergantian dalam mode \tem{Round Robin}.
+    \end{alertblock}
+
+    \vspace{0.2cm}
+    \textbf{Pertanyaan kunci:} Bagaimana prioritas ini ditentukan? $\rightarrow$ Jawabannya: dari \tem{perilaku} proses!
+
+    \begin{exampleblock}{Analogi}
+        Bayangkan antrian loket: VIP (prioritas tinggi) dilayani duluan. Tapi siapa yang jadi VIP? Yang membutuhkan layanan singkat!
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Bagaimana Prioritas Berubah?}
+    \framesubtitle{Rules 3, 4a, 4b: Mekanisme naik-turun antrian}
+    \small
+    \begin{block}{Aturan 3}
+        Proses baru selalu masuk di antrian \tem{paling atas} (prioritas tertinggi).
+    \end{block}
+
+    \vspace{0.1cm}
+    \begin{block}{Aturan 4a}
+        Jika proses menghabiskan seluruh jatah waktunya $\rightarrow$ prioritas \tem{turun} (turun satu antrian).
+    \end{block}
+
+    \vspace{0.1cm}
+    \begin{block}{Aturan 4b}
+        Jika proses melepas CPU sebelum jatah habis (misalnya I/O) $\rightarrow$ prioritas \tem{tetap}.
+    \end{block}
+
+    \vspace{0.1cm}
+    \textbf{Logika:} Proses yang pakai CPU lama = ``batch job'' $\rightarrow$ turun. Proses yang sering lepas CPU = ``interaktif'' $\rightarrow$ tetap tinggi.
+\end{frame}
+
+\begin{frame}
+    \frametitle{Contoh 1: Pekerjaan Berjalan Lama}
+    \framesubtitle{Proses CPU-bound turun dari Q2 ke Q0}
+    \small
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        Sebuah proses CPU-bound masuk di Q2 (tertinggi).
+        \begin{enumerate}
+            \item Habiskan time slice di Q2 $\rightarrow$ turun ke Q1
+            \item Habiskan time slice di Q1 $\rightarrow$ turun ke Q0
+            \item Bertahan di Q0 selamanya (prioritas terendah)
+        \end{enumerate}
+        \column{0.42\textwidth}
+        \begin{center}
+            \includegraphics[width=0.8\textwidth,keepaspectratio]{figures/5_2.png}
+        \end{center}
+    \end{columns}
+    \begin{block}{Interpretasi}
+        MLFQ ``menghukum'' proses yang terus-menerus makan CPU. Ini memberi jalan kepada proses pendek dan interaktif.
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Contoh 2: Pekerjaan Pendek Muncul}
+    \framesubtitle{MLFQ mendekati perilaku SJF secara otomatis}
+    \small
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        A (CPU-bound, panjang) sudah di Q0. Lalu B (pendek, 20 ms) tiba.
+        \begin{enumerate}
+            \item B masuk di Q2 (tertinggi) $\rightarrow$ langsung jalan
+            \item B selesai dalam 2 time slice
+            \item A melanjutkan di Q0 setelah B selesai
+        \end{enumerate}
+        \column{0.42\textwidth}
+        \begin{center}
+            \includegraphics[width=0.8\textwidth,keepaspectratio]{figures/5_3.png}
+        \end{center}
+    \end{columns}
+    \begin{exampleblock}{Seperti SJF!}
+        Tanpa tahu durasi B, MLFQ secara otomatis \tem{memprioritaskan pekerjaan pendek}. Ini terjadi karena proses baru selalu masuk di atas.
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Contoh 3: Proses Interaktif dengan I/O}
+    \framesubtitle{Proses I/O-intensif tetap di prioritas tinggi}
+    \small
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        B (interaktif): pakai CPU hanya 1 ms lalu lepas untuk I/O.
+
+        \vspace{0.1cm}
+        Karena B melepas CPU sebelum jatah habis (Aturan 4b), MLFQ menjaga B di prioritas \textbf{tertinggi}.
+
+        \vspace{0.1cm}
+        $\rightarrow$ Pengguna yang mengetik di terminal mendapat respons cepat!
+        \column{0.42\textwidth}
+        \begin{center}
+            \includegraphics[width=0.8\textwidth,keepaspectratio]{figures/5_4.png}
+        \end{center}
+    \end{columns}
+    \begin{block}{Kesimpulan}
+        MLFQ otomatis mengenali proses interaktif dan memberi mereka layanan \tem{cepat}.
+    \end{block}
+\end{frame}
+
+\section{Masalah dan Perbaikan MLFQ}
+
+\begin{frame}
+    \frametitle{Tiga Masalah MLFQ Versi Awal}
+    \framesubtitle{Kelemahan serius yang perlu diatasi}
+    \small
+    \begin{enumerate}
+        \item \textbf{Starvation (Kelaparan):} Jika ada banyak proses interaktif, proses CPU-bound di Q0 \tem{tidak pernah} mendapat giliran.
+
+        \vspace{0.1cm}
+        \item \textbf{Gaming the Scheduler (Pemermainan):} Proses nakal bisa sengaja melepas CPU tepat sebelum jatah habis (misalnya I/O ke file kosong), sehingga tetap di prioritas tinggi dan memonopoli CPU hingga 99\%!
+
+        \vspace{0.1cm}
+        \item \textbf{Perubahan Perilaku:} Proses yang awalnya CPU-bound lalu menjadi interaktif tidak akan naik prioritas lagi.
+    \end{enumerate}
+    \begin{alertblock}{Kesimpulan}
+        Aturan awal MLFQ mudah dieksploitasi dan tidak adil untuk proses jangka panjang.
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Solusi 1: Priority Boost (Aturan 5)}
+    \framesubtitle{Secara berkala, naikkan semua proses ke antrian teratas}
+    \small
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        \begin{block}{Aturan 5}
+            Setelah periode waktu $S$, \tem{pindahkan semua} proses ke antrian paling atas.
+        \end{block}
+
+        \vspace{0.1cm}
+        Manfaat:
+        \begin{enumerate}
+            \item Proses CPU-bound dijamin \textbf{tidak kelaparan}
+            \item Proses yang berubah perilaku mendapat \textbf{kesempatan baru}
+        \end{enumerate}
+        \column{0.42\textwidth}
+        \begin{center}
+            \includegraphics[width=\textwidth,keepaspectratio]{figures/5_5.png}
+        \end{center}
+    \end{columns}
+    \begin{exampleblock}{Kiri vs Kanan}
+        Kiri: tanpa boost, proses panjang kelaparan. Kanan: dengan boost tiap $S$ ms, proses panjang tetap mendapat giliran.
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Solusi 2: Better Accounting (Aturan 4 Baru)}
+    \framesubtitle{Lacak total waktu CPU, bukan per burst}
+    \small
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        \begin{block}{Aturan 4 (Revisi)}
+            Setelah proses menggunakan \tem{total} jatah waktunya pada satu tingkat (berapa kali pun ia melepas CPU), prioritas diturunkan.
+        \end{block}
+
+        \vspace{0.1cm}
+        Jadi proses tidak bisa ``curang'' dengan I/O tepat sebelum jatah habis --- total CPU time-nya tetap dihitung!
+        \column{0.42\textwidth}
+        \begin{center}
+            \includegraphics[width=\textwidth,keepaspectratio]{figures/5_6.png}
+        \end{center}
+    \end{columns}
+    \begin{alertblock}{Kiri vs Kanan}
+        Kiri: proses gaming memonopoli CPU. Kanan: akuntansi akurat mencegah pemermainan.
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Lima Aturan Final MLFQ}
+    \framesubtitle{Kumpulan aturan yang sudah disempurnakan}
+    \small
+    \begin{enumerate}
+        \item \textbf{Rule 1:} Jika Priority(A) $>$ Priority(B), A berjalan
+        \item \textbf{Rule 2:} Jika Priority(A) $=$ Priority(B), A \& B dalam Round Robin
+        \item \textbf{Rule 3:} Proses baru masuk di antrian \tem{paling atas}
+        \item \textbf{Rule 4:} Setelah total jatah waktu habis di satu level, proses \tem{turun}
+        \item \textbf{Rule 5:} Setiap periode $S$, semua proses \tem{dinaikkan} ke atas
+    \end{enumerate}
+
+    \vspace{0.2cm}
+    \begin{exampleblock}{Kenapa MLFQ Hebat?}
+        Tanpa tahu apa-apa tentang proses, MLFQ mengamati perilaku dan membuat keputusan yang mendekati \tem{optimal} untuk turnaround DAN response time!
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Latihan: MLFQ}
+    \framesubtitle{Uji pemahaman Anda tentang Multi-Level Feedback Queue}
+    \small
+    \begin{block}{Soal}
+        Sebuah sistem MLFQ memiliki 3 antrian (Q2 tertinggi, Q0 terendah) dengan time slice = 10 ms per level. Dua proses:
+        \begin{itemize}
+            \item \textbf{Proses A}: CPU-bound, butuh 40 ms total CPU
+            \item \textbf{Proses B}: interaktif, setiap 3 ms melakukan I/O (melepas CPU)
+        \end{itemize}
+        Keduanya tiba bersamaan di $t=0$.
+
+        \vspace{0.1cm}
+        Pertanyaan:
+        \begin{enumerate}
+            \item Di antrian mana A berada setelah 30 ms?
+            \item Di antrian mana B berada setelah 30 ms? Mengapa?
+            \item Apakah B perlu menunggu A? Jelaskan!
+        \end{enumerate}
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Jawaban: MLFQ}
+    \framesubtitle{Pembahasan soal latihan MLFQ}
+    \small
+    \textbf{Proses A} (CPU-bound, 40 ms total):
+    \begin{enumerate}\itemsep0.05em
+        \item $t=0$--10: jalan di Q2, habiskan time slice $\rightarrow$ turun ke Q1
+        \item $t=10$--20: jalan di Q1, habiskan time slice $\rightarrow$ turun ke Q0
+        \item Setelah 30 ms: A ada di \tem{Q0} (prioritas terendah)
+    \end{enumerate}
+
+    \vspace{0.1cm}
+    \textbf{Proses B} (interaktif, I/O setiap 3 ms):
+    \begin{enumerate}\itemsep0.05em
+        \item B selalu melepas CPU sebelum jatah 10 ms habis (Aturan 4b)
+        \item Setelah 30 ms: B \tem{tetap di Q2} (prioritas tertinggi)
+    \end{enumerate}
+
+    \vspace{0.1cm}
+    \begin{exampleblock}{B tidak perlu menunggu A!}
+        Karena B di Q2 dan A di Q0, B selalu diprioritaskan (Aturan 1). Ini menunjukkan MLFQ secara otomatis memberikan layanan cepat untuk proses \tem{interaktif}.
+    \end{exampleblock}
+\end{frame}
+
+\section{Tuning dan Implementasi Nyata}
+
+\begin{frame}
+    \frametitle{Parameter yang Perlu Di-tuning}
+    \framesubtitle{Konstanta voo-doo dalam MLFQ}
+    \small
+    \begin{tabular}{|p{0.30\textwidth}|p{0.55\textwidth}|}
+        \hline
+        \textbf{Parameter} & \textbf{Dampak} \\
+        \hline
+        Jumlah antrian & Lebih banyak = granularitas prioritas lebih halus \\
+        \hline
+        Time slice per antrian & Atas: pendek (10 ms). Bawah: panjang (100+ ms) \\
+        \hline
+        Periode boost ($S$) & Terlalu besar: starvation. Terlalu kecil: kurang efisien \\
+        \hline
+        Jatah waktu (allotment) & Berapa lama sebelum turun level \\
+        \hline
+    \end{tabular}
+
+    \vspace{0.2cm}
+    \begin{alertblock}{Hukum Ousterhout}
+        Hindari ``konstanta ajaib'' yang sulit ditentukan. Tapi di MLFQ, tuning parameter tetap diperlukan --- biasanya menggunakan \tem{default} yang sudah terbukti baik.
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{MLFQ di OS Nyata}
+    \framesubtitle{Implementasi pada Solaris, BSD, dan Windows}
+    \small
+    \begin{columns}[T]
+        \column{0.49\textwidth}
+        \textbf{Solaris}
+        \begin{enumerate}
+            \item 60 antrian prioritas
+            \item Time slice: 20ms (atas) sampai ratusan ms (bawah)
+            \item Boost setiap $\sim$1 detik
+            \item Konfigurasi via tabel admin
+        \end{enumerate}
+        \column{0.49\textwidth}
+        \textbf{BSD / Windows NT}
+        \begin{enumerate}
+            \item Menggunakan formula decay-usage
+            \item Prioritas meluruh seiring penggunaan CPU
+            \item User bisa atur via \texttt{nice} (Unix) atau Task Manager priority
+        \end{enumerate}
+    \end{columns}
+    \begin{block}{Fakta Penting}
+        Hampir semua OS modern --- Linux, macOS, Windows --- menggunakan varian \tem{MLFQ} sebagai penjadwal dasar.
+    \end{block}
+\end{frame}
+
+\section{Ringkasan dan Penutup}
+
+\begin{frame}
+    \frametitle{Perbandingan Lengkap Semua Algoritma}
+    \framesubtitle{Dari yang paling sederhana ke yang paling cerdas}
+    \scriptsize
+    \begin{tabular}{|p{0.11\textwidth}|p{0.11\textwidth}|p{0.11\textwidth}|p{0.09\textwidth}|p{0.09\textwidth}|p{0.28\textwidth}|}
+        \hline
+        \textbf{Algoritma} & \textbf{Turn-around} & \textbf{Response} & \textbf{Pre-empt} & \textbf{Perlu tahu durasi} & \textbf{Masalah utama} \\
+        \hline
+        FIFO & Buruk & Buruk & Tidak & Tidak & Convoy effect \\
+        \hline
+        SJF & Optimal* & Buruk & Tidak & Ya & Non-preemptive \\
+        \hline
+        STCF & Optimal & Buruk & Ya & Ya & Butuh oracle \\
+        \hline
+        RR & Buruk & Baik & Ya & Tidak & Turnaround buruk \\
+        \hline
+        MLFQ & Baik & Baik & Ya & \tem{Tidak} & Tuning parameter \\
+        \hline
+    \end{tabular}
+
+    \vspace{0.1cm}
+    \begin{exampleblock}{MLFQ = Jawaban Praktis}
+        MLFQ tidak perlu tahu durasi, bersifat preemptive, dan mendekati optimal untuk kedua metrik!
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Ringkasan Konseptual}
+    \framesubtitle{Poin inti yang harus diingat}
+    \begin{alertblock}{Lima Kalimat Kunci}
+        \tem{Penjadwalan} adalah soal memilih proses mana yang dijalankan berikutnya oleh CPU, dengan trade-off antara kecepatan penyelesaian dan kecepatan respons.
+    \end{alertblock}
+    \vspace{0.1cm}
+    \small
+    \begin{enumerate}
+        \item FIFO sederhana tapi rentan convoy effect
+        \item SJF/STCF optimal untuk turnaround, tapi butuh tahu durasi
+        \item Round Robin bagus untuk response, buruk untuk turnaround
+        \item MLFQ menggabungkan keduanya tanpa perlu tahu durasi
+        \item Kunci MLFQ: belajar dari perilaku, bukan menebak masa depan
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Soal Latihan Mandiri (1/2)}
+    \framesubtitle{Kerjakan dan kuasai semua soal ini!}
+    \small
+    \begin{alertblock}{Perhatian!}
+        Setiap mahasiswa \tem{wajib menguasai} semua soal berikut. Minggu depan, beberapa mahasiswa akan dipilih secara \tem{acak} untuk maju ke depan dan menjelaskan jawabannya.
+    \end{alertblock}
+
+    \vspace{0.1cm}
+    \begin{block}{Soal 1 --- FIFO vs SJF}
+        Empat proses tiba bersamaan di $t=0$: P1 = 15 dtk, P2 = 3 dtk, P3 = 7 dtk, P4 = 1 dtk.\\
+        Hitung rata-rata turnaround time untuk FIFO (urutan P1, P2, P3, P4) dan SJF. Berapa persen perbaikan SJF dibanding FIFO?
+    \end{block}
+
+    \begin{block}{Soal 2 --- STCF}
+        P1 tiba di $t=0$ (durasi 10 dtk), P2 tiba di $t=2$ (durasi 4 dtk), P3 tiba di $t=4$ (durasi 2 dtk).\\
+        Gambarkan timeline eksekusi STCF dan hitung rata-rata turnaround time.
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Soal Latihan Mandiri (2/2)}
+    \framesubtitle{Kerjakan dan kuasai semua soal ini!}
+    \scriptsize
+    \begin{block}{Soal 3 --- Round Robin}
+        Tiga proses tiba di $t=0$: P1 = 9 dtk, P2 = 6 dtk, P3 = 3 dtk. Time slice = 3 detik.\\
+        Hitung: (a) rata-rata response time, (b) rata-rata turnaround time. Bandingkan hasilnya dengan SJF --- algoritma mana yang lebih baik untuk masing-masing metrik?
+    \end{block}
+
+    \vspace{0.1cm}
+    \begin{block}{Soal 4 --- MLFQ}
+        Sebuah MLFQ memiliki 3 antrian (Q2, Q1, Q0) dengan time slice 8 ms per level dan priority boost setiap $S=50$ ms. Proses X (CPU-bound, butuh 100 ms) dan Y (interaktif, I/O setiap 5 ms) tiba bersamaan.\\
+        (a) Di antrian mana X dan Y berada setelah 30 ms?\\
+        (b) Apa yang terjadi saat boost di $t=50$ ms? Mengapa ini penting?
+    \end{block}
+
+    \begin{alertblock}{Ingat!}
+        Pahami \textbf{logika} di balik jawaban, bukan hanya hasilnya. Anda harus bisa \tem{menjelaskan} ke depan kelas!
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Penutup}
+    \framesubtitle{Arah belajar lanjutan setelah Week 3}
+    \begin{exampleblock}{Lanjut Bacaan}
+        Untuk memperkuat konsep, baca ulang bab penjadwalan di buku terjemahan OSTEP dan coba simulasi \texttt{scheduler.py} dan \texttt{mlfq.py}.
+    \end{exampleblock}
+    \vspace{0.1cm}
+    \small
+    \begin{enumerate}
+        \item \texttt{chapter4-book-translate.tex}: FIFO, SJF, STCF, RR
+        \item \texttt{chapter5-book-translate.tex}: MLFQ dan tuningnya
+        \item Coba simulator: \texttt{scheduler.py} dan \texttt{mlfq.py} dari repo OSTEP
+    \end{enumerate}
+\end{frame}
+
+\end{document}
