@@ -1,0 +1,174 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[indonesian]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{enumitem}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{xcolor}
+
+\setstretch{1.15}
+\setlist[itemize]{noitemsep, topsep=2pt}
+\setlist[enumerate]{noitemsep, topsep=2pt}
+\titleformat{\section}{\large\bfseries}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection.}{0.6em}{}
+
+\begin{document}
+
+\begin{center}
+{\Large \textbf{TERM OF REFERENCE (ToR)}}\\[4pt]
+{\large Tugas Individu}\\[2pt]
+{\large Mata Kuliah Sistem Operasi}\\[6pt]
+\textbf{Topik: CPU Scheduling (FIFO, SJF/STCF, RR, MLFQ)}
+\end{center}
+
+\vspace{0.6em}
+
+\section{Latar Belakang}
+Penjadwalan CPU adalah inti dari desain sistem operasi modern karena menentukan keseimbangan antara efisiensi, responsivitas, dan keadilan layanan proses. Melalui tugas ini, mahasiswa diminta menunjukkan pemahaman konsep scheduling dengan menjelaskan penyelesaian soal secara sistematis dalam bentuk presentasi video.
+
+\section{Tujuan Tugas}
+\begin{enumerate}
+    \item Mahasiswa mampu menganalisis perilaku beberapa algoritma penjadwalan CPU.
+    \item Mahasiswa mampu menghitung metrik \textit{turnaround time} dan \textit{response time}.
+    \item Mahasiswa mampu memberikan argumen pemilihan algoritma untuk karakter beban kerja tertentu.
+    \item Mahasiswa mampu mengkomunikasikan solusi teknis secara jelas melalui media video.
+\end{enumerate}
+
+\section{Bentuk Luaran}
+Setiap mahasiswa mengumpulkan:
+\begin{enumerate}
+    \item 1 tautan video presentasi pembahasan soal dalam format \textit{screen recording}.
+    \item 1 dokumen ringkas (PDF 1--2 halaman) berisi poin solusi, tabel hasil hitung, dan kesimpulan.
+\end{enumerate}
+
+\section{Soal Tugas}
+Diberikan 5 proses berikut. Soal bersifat unik untuk setiap mahasiswa karena komponen CPU burst diambil dari digit NIM.
+
+Definisikan:
+\begin{itemize}
+    \item $d_1, d_2, d_3, d_4, d_5$ = 5 digit terakhir NIM Anda (masing-masing 0--9).
+    \item Gunakan rumus burst berikut agar tidak ada nilai nol.
+\end{itemize}
+\noindent
+\textbf{Contoh perhitungan (contoh NIM):} jika 5 digit terakhir NIM adalah \texttt{24137}, maka
+$d_1=2$, $d_2=4$, $d_3=1$, $d_4=3$, $d_5=7$.\\
+Sehingga:
+\begin{itemize}
+    \item $P1 = d_1 + 1 = 2 + 1 = 3$
+    \item $P2 = d_2 + 2 = 4 + 2 = 6$
+    \item $P3 = d_3 + 3 = 1 + 3 = 4$
+    \item $P4 = d_4 + 1 = 3 + 1 = 4$
+    \item $P5 = d_5 + 2 = 7 + 2 = 9$
+\end{itemize}
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{Proses} & \textbf{Arrival Time} & \textbf{CPU Burst} & \textbf{Catatan} \\
+\hline
+P1 & 0 & $d_1 + 1$ & CPU-bound \\
+P2 & 1 & $d_2 + 2$ & Interaktif \\
+P3 & 2 & $d_3 + 3$ & CPU-bound \\
+P4 & 3 & $d_4 + 1$ & Interaktif \\
+P5 & 6 & $d_5 + 2$ & Campuran \\
+\hline
+\end{tabular}
+\end{center}
+
+Gunakan asumsi \textit{context switch overhead} = 0. Untuk Round Robin, gunakan \textit{time quantum} = 3.
+
+\subsection*{Instruksi Pengerjaan Soal}
+Kerjakan dan jelaskan:
+\begin{enumerate}
+    \item Buat Gantt chart untuk algoritma berikut:
+    \begin{itemize}
+        \item FIFO (FCFS)
+        \item SJF non-preemptive
+        \item STCF (preemptive SJF)
+        \item Round Robin (q = 3)
+    \end{itemize}
+    \item Hitung untuk setiap algoritma:
+    \begin{itemize}
+        \item Rata-rata \textit{turnaround time}
+        \item Rata-rata \textit{response time}
+    \end{itemize}
+    \item Bandingkan hasil keempat algoritma, lalu jawab:
+    \begin{itemize}
+        \item Algoritma mana terbaik untuk meminimalkan \textit{turnaround time}? Jelaskan.
+        \item Algoritma mana terbaik untuk sistem interaktif? Jelaskan berdasarkan \textit{response time}.
+        \item Tunjukkan minimal 1 trade-off nyata dari hasil perhitungan Anda.
+    \end{itemize}
+    \item Desain skema MLFQ sederhana (minimal 3 level antrian) untuk data proses di atas:
+    \begin{itemize}
+        \item Tentukan aturan prioritas, kuantum tiap level, dan aturan \textit{priority boost}.
+        \item Jelaskan mengapa aturan Anda dapat mengurangi starvation.
+    \end{itemize}
+\end{enumerate}
+
+\section{Opsi Format Presentasi Video (Pilih Salah Satu)}
+\subsection*{Opsi A: Animasi PowerPoint}
+Mahasiswa membuat slide (PowerPoint/Canva/Keynote) dengan animasi alur eksekusi proses, lalu melakukan narasi pembahasan.
+
+\subsection*{Opsi B: Live Teaching}
+Mahasiswa mengajar secara langsung menggunakan media tulis digital/manual (misal: Excalidraw, Whiteboard app, atau tablet pen), sambil menjelaskan langkah hitung secara real-time.
+
+\section{Ketentuan Teknis}
+\begin{enumerate}
+    \item Durasi video: 8--12 menit.
+    \item Tugas wajib dikerjakan secara individu.
+    \item Format video adalah \textit{screen recording} (rekam layar) saat menjelaskan pembahasan.
+    \item Wajah presenter \textbf{wajib muncul minimal 30\% durasi} (kamera \textit{on}) untuk verifikasi presentasi.
+    \item Audio harus jelas, tanpa musik latar yang mengganggu.
+    \item Seluruh simbol, angka, dan timeline pada Gantt chart harus terbaca.
+    \item Gunakan Bahasa Indonesia yang komunikatif dan istilah teknis yang tepat.
+    \item Wajib menampilkan sumber rujukan teori (minimal 2 referensi kredibel: buku / paper / dokumentasi kuliah).
+    \item Dilarang menyalin pembahasan mentah dari internet/AI tanpa pemahaman. Jika menggunakan alat bantu AI, cantumkan bagian yang dibantu dan lakukan verifikasi mandiri.
+\end{enumerate}
+
+\section{Format Penamaan dan Pengumpulan}
+\begin{itemize}
+    \item Video tidak diunggah langsung ke LMS.
+    \item Opsi rekomendasi: unggah video ke Loom atau YouTube.
+    \item Opsi alternatif: unggah video ke Google Drive atau OneDrive.
+    \item Link video dikumpulkan melalui LMS.
+    \item Pastikan link dapat diakses publik (uji dengan mode private/incognito sebelum dikumpulkan).
+    \item Nama dokumen: \texttt{OS-W3\_Scheduling\_NIM\_Nama.pdf}
+\end{itemize}
+
+\section{Rubrik Penilaian (100 poin + bonus ketepatan waktu)}
+\begin{center}
+\begin{tabular}{|p{8.5cm}|c|}
+\hline
+\textbf{Komponen Penilaian} & \textbf{Bobot} \\
+\hline
+Ketepatan Gantt chart dan perhitungan metrik & 35 \\
+\hline
+Kedalaman analisis perbandingan algoritma & 25 \\
+\hline
+Desain MLFQ dan argumentasi anti-starvation & 20 \\
+\hline
+Kejelasan komunikasi teknis dan struktur penjelasan & 15 \\
+\hline
+Kerapian format, kepatuhan ketentuan, dan ketepatan waktu pengumpulan & 5 \\
+\hline
+\end{tabular}
+\end{center}
+\noindent
+\textbf{Catatan bonus:} Pengumpulan lebih awal dari tenggat mendapatkan tambahan nilai (besar bonus mengikuti kebijakan dosen/pengampu).
+
+\section{Batas Waktu dan Sanksi}
+\begin{itemize}
+    \item Tenggat pengumpulan dapat dilihat pada LMS.
+    \item Keterlambatan: pengurangan \textbf{10\% per jam} dari nilai yang diperoleh.
+    \item Melewati 3\,$\times$24 jam tanpa konfirmasi: tugas dinyatakan tidak terkumpul.
+\end{itemize}
+
+\vfill
+\begin{flushright}
+Dokumen ToR --- Sistem Operasi (Week 3 Scheduling)
+\end{flushright}
+
+\end{document}
