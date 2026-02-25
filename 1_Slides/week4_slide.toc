@@ -1,0 +1,9 @@
+\beamer@sectionintoc {1}{Review Aturan MLFQ}{4}{0}{1}
+\beamer@sectionintoc {2}{Contoh Soal 1 (Dasar)}{6}{0}{2}
+\beamer@sectionintoc {3}{Penyelesaian Soal 1}{8}{0}{3}
+\beamer@sectionintoc {4}{Contoh Soal 2 (Lanjut)}{18}{0}{4}
+\beamer@sectionintoc {5}{Penyelesaian Soal 2}{19}{0}{5}
+\beamer@sectionintoc {6}{Soal Tantangan 1}{25}{0}{6}
+\beamer@sectionintoc {7}{Soal Tantangan 2}{30}{0}{7}
+\beamer@sectionintoc {8}{Kesimpulan}{35}{0}{8}
+\beamer@sectionintoc {9}{Latihan Mandiri}{36}{0}{9}
