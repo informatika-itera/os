@@ -117,4 +117,41 @@
 \newlabel{fig:mlfq-gaming}{{5.6}{50}{Tanpa (Kiri) dan Dengan (Kanan) Toleransi Pemermainan}{figure.5.6}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {5.5}Tuning MLFQ dan Isu Lainnya}{51}{section.5.5}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {5.6}MLFQ: Ringkasan}{52}{section.5.6}\protected@file@percent }
-\gdef \@abspage@last{59}
+\@writefile{toc}{\contentsline {chapter}{\numberline {6}Virtual Memory: Abstraksi, Translasi, Segmentasi, dan Free-Space}{55}{chapter.6}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\@writefile{toc}{\contentsline {section}{\numberline {6.1}Abstraksi Address Space (\textit  {vm-intro})}{55}{section.6.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6.1}{\ignorespaces Ilustrasi Sistem Awal: OS dan Satu Program di Memori Fisik}}{56}{figure.6.1}\protected@file@percent }
+\newlabel{fig:vmintro-early}{{6.1}{56}{Ilustrasi Sistem Awal: OS dan Satu Program di Memori Fisik}{figure.6.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.2}{\ignorespaces Beberapa Proses Berbagi Memori Fisik}}{57}{figure.6.2}\protected@file@percent }
+\newlabel{fig:vmintro-sharing}{{6.2}{57}{Beberapa Proses Berbagi Memori Fisik}{figure.6.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.3}{\ignorespaces Contoh Struktur Address Space Proses}}{57}{figure.6.3}\protected@file@percent }
+\newlabel{fig:vmintro-as}{{6.3}{57}{Contoh Struktur Address Space Proses}{figure.6.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.2}Interlude API Memori (\textit  {vm-api})}{58}{section.6.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6.3}Mekanisme Translasi Alamat (\textit  {vm-mechanism})}{59}{section.6.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6.4}{\ignorespaces Proses dan Address Space Virtualnya}}{60}{figure.6.4}\protected@file@percent }
+\newlabel{fig:vmmech-process}{{6.4}{60}{Proses dan Address Space Virtualnya}{figure.6.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.5}{\ignorespaces Relokasi Proses di Memori Fisik}}{60}{figure.6.5}\protected@file@percent }
+\newlabel{fig:vmmech-relocation}{{6.5}{60}{Relokasi Proses di Memori Fisik}{figure.6.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.6}{\ignorespaces Kebutuhan Hardware dan Tanggung Jawab OS pada Translasi Alamat}}{61}{figure.6.6}\protected@file@percent }
+\newlabel{fig:vmmech-hwos}{{6.6}{61}{Kebutuhan Hardware dan Tanggung Jawab OS pada Translasi Alamat}{figure.6.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.4}Segmentasi (\textit  {vm-segmentation})}{62}{section.6.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6.7}{\ignorespaces Address Space dengan Celah Ruang Kosong}}{62}{figure.6.7}\protected@file@percent }
+\newlabel{fig:vmseg-as}{{6.7}{62}{Address Space dengan Celah Ruang Kosong}{figure.6.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.8}{\ignorespaces Penempatan Segmen di Memori Fisik}}{63}{figure.6.8}\protected@file@percent }
+\newlabel{fig:vmseg-placement}{{6.8}{63}{Penempatan Segmen di Memori Fisik}{figure.6.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.9}{\ignorespaces Contoh Nilai Register Segmentasi}}{63}{figure.6.9}\protected@file@percent }
+\newlabel{fig:vmseg-registers}{{6.9}{63}{Contoh Nilai Register Segmentasi}{figure.6.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.10}{\ignorespaces Fragmentasi Eksternal dan Compaction}}{63}{figure.6.10}\protected@file@percent }
+\newlabel{fig:vmseg-compaction}{{6.10}{63}{Fragmentasi Eksternal dan Compaction}{figure.6.10}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.5}Manajemen Free-Space (\textit  {vm-freespace})}{64}{section.6.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6.11}{\ignorespaces Header Blok Alokasi pada Heap}}{64}{figure.6.11}\protected@file@percent }
+\newlabel{fig:vmfree-header}{{6.11}{64}{Header Blok Alokasi pada Heap}{figure.6.11}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.12}{\ignorespaces Perubahan Heap Saat Alokasi Awal}}{65}{figure.6.12}\protected@file@percent }
+\newlabel{fig:vmfree-alloc}{{6.12}{65}{Perubahan Heap Saat Alokasi Awal}{figure.6.12}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.13}{\ignorespaces Contoh Free List Tanpa Coalescing}}{65}{figure.6.13}\protected@file@percent }
+\newlabel{fig:vmfree-nocoalesce}{{6.13}{65}{Contoh Free List Tanpa Coalescing}{figure.6.13}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.14}{\ignorespaces Contoh Buddy System}}{66}{figure.6.14}\protected@file@percent }
+\newlabel{fig:vmfree-buddy}{{6.14}{66}{Contoh Buddy System}{figure.6.14}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.6}Ringkasan Bab}{66}{section.6.6}\protected@file@percent }
+\gdef \@abspage@last{73}

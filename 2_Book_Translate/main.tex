@@ -8,6 +8,8 @@
 \usepackage{xcolor}
 \usepackage{listings}
 \usepackage{tcolorbox}
+\usepackage{float}
+\usepackage[section]{placeins}
 \usepackage{parskip}
 \usepackage[hidelinks]{hyperref}
 \usepackage{fancyhdr}
@@ -28,6 +30,14 @@
 % Layout settings to mimic the book
 \geometry{a4paper, margin=2.5cm}
 \renewcommand{\familydefault}{\sfdefault} % Sans serif font
+% Keep figures close to discussion and avoid too many floats on one page
+\setcounter{topnumber}{1}
+\setcounter{bottomnumber}{1}
+\setcounter{totalnumber}{2}
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\bottomfraction}{0.7}
+\renewcommand{\textfraction}{0.12}
+\renewcommand{\floatpagefraction}{0.75}
 
 % Colors
 \definecolor{lightgray}{RGB}{230,230,230}
@@ -98,5 +108,6 @@
 \input{chapter3-book-translate.tex}
 \input{chapter4-book-translate.tex}
 \input{chapter5-book-translate.tex}
+\input{chapter6-book-translate.tex}
 
 \end{document}

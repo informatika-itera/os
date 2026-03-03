@@ -1,0 +1,6 @@
+\beamer@sectionintoc {1}{Mengapa Virtual Memory?}{5}{0}{1}
+\beamer@sectionintoc {2}{API Memori (C) Secara Praktis}{10}{0}{2}
+\beamer@sectionintoc {3}{Mekanisme Translasi Alamat}{16}{0}{3}
+\beamer@sectionintoc {4}{Segmentasi}{24}{0}{4}
+\beamer@sectionintoc {5}{Manajemen Free-Space}{31}{0}{5}
+\beamer@sectionintoc {6}{Ringkasan dan Latihan}{38}{0}{6}

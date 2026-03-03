@@ -33,9 +33,6 @@
             color: var(--text-color);
             margin: 0;
             padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             min-height: 100vh;
             background-image: 
                 radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.15) 0px, transparent 50%),
@@ -73,8 +70,9 @@
 
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 1200px;
             padding: 2rem;
+            margin: 0 auto;
         }
 
         header {
@@ -118,6 +116,69 @@
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 1.5rem;
             animation: fadeInUp 0.8s ease-out 0.2s backwards;
+        }
+
+        .featured-pdf {
+            background-color: var(--card-bg);
+            border-radius: 1rem;
+            padding: 1.25rem;
+            margin-top: 2rem;
+            border: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.8s ease-out 0.1s backwards;
+        }
+        .featured-pdf.is-hidden {
+            display: none;
+        }
+
+        .featured-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .featured-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .featured-header p {
+            margin: 0.2rem 0 0 0;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .pdf-actions {
+            display: flex;
+            gap: 0.6rem;
+        }
+
+        .pdf-actions a {
+            text-decoration: none;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            background: rgba(56, 189, 248, 0.08);
+            padding: 0.45rem 0.7rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .pdf-actions a:hover {
+            border-color: rgba(56, 189, 248, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .pdf-embed {
+            width: 100%;
+            height: 70vh;
+            min-height: 500px;
+            border: 1px solid var(--border-color);
+            border-radius: 0.8rem;
+            background: #0b1220;
         }
 
         .card {
@@ -251,7 +312,7 @@
             </a>
 
             <div class="card" style="position: relative;">
-                <a href="week0_pdf.html" style="text-decoration: none; color: inherit; display: block; flex-grow: 1;">
+                <a href="week0_pdf.html" class="week-link" data-preview-url="1_Slides/week0_slide.pdf" data-preview-title="Week 0 - Review Arsitektur Komputer" style="text-decoration: none; color: inherit; display: block; flex-grow: 1;">
                     <div class="card-header">
                         <span class="chapter-tag">Week 0</span>
                         <svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
@@ -272,7 +333,7 @@
             </div>
 
             <div class="card" style="position: relative;">
-                <a href="week1_pdf.html" style="text-decoration: none; color: inherit; display: block; flex-grow: 1;">
+                <a href="week1_pdf.html" class="week-link" data-preview-url="1_Slides/week1_slide.pdf" data-preview-title="Week 1 - Pengenalan Sistem Operasi" style="text-decoration: none; color: inherit; display: block; flex-grow: 1;">
                     <div class="card-header">
                         <span class="chapter-tag">Week 1</span>
                         <svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
@@ -293,7 +354,7 @@
             </div>
 
             <div class="card" style="position: relative;">
-                <a href="week2_pdf.html" style="text-decoration: none; color: inherit; display: block; flex-grow: 1;">
+                <a href="week2_pdf.html" class="week-link" data-preview-url="1_Slides/week2_slide.pdf" data-preview-title="Week 2 - Process &amp; OS Structure" style="text-decoration: none; color: inherit; display: block; flex-grow: 1;">
                     <div class="card-header">
                         <span class="chapter-tag">Week 2</span>
                         <svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
@@ -314,7 +375,7 @@
             </div>
 
             <div class="card" style="position: relative;">
-                <a href="week3_pdf.html" style="text-decoration: none; color: inherit; display: block; flex-grow: 1;">
+                <a href="week3_pdf.html" class="week-link" data-preview-url="1_Slides/week3_slide.pdf" data-preview-title="Week 3 - CPU Scheduling" style="text-decoration: none; color: inherit; display: block; flex-grow: 1;">
                     <div class="card-header">
                         <span class="chapter-tag">Week 3</span>
                         <svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
@@ -335,7 +396,7 @@
             </div>
 
             <div class="card" style="position: relative;">
-                <a href="week4_pdf.html" style="text-decoration: none; color: inherit; display: block; flex-grow: 1;">
+                <a href="week4_pdf.html" class="week-link" data-preview-url="1_Slides/week4_slide.pdf" data-preview-title="Week 4 - CPU Scheduling MLFQ" style="text-decoration: none; color: inherit; display: block; flex-grow: 1;">
                     <div class="card-header">
                         <span class="chapter-tag">Week 4</span>
                         <svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
@@ -346,6 +407,26 @@
                 
                 <!-- PDF Download Button -->
                 <a href="1_Slides/week4_slide.pdf" target="_blank" title="Download PDF"
+                   style="position: absolute; bottom: 1.5rem; right: 1.5rem; padding: 8px; color: var(--text-muted); background: var(--card-bg); border-radius: 50%; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; z-index: 10;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </a>
+            </div>
+
+            <div class="card" style="position: relative;">
+                <a href="#" class="week-link" data-preview-url="1_Slides/week5_slide.pdf" data-preview-title="Week 5 - Virtual Memory" style="text-decoration: none; color: inherit; display: block; flex-grow: 1;">
+                    <div class="card-header">
+                        <span class="chapter-tag">Week 5</span>
+                        <svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </div>
+                    <h2>Virtual Memory</h2>
+                    <p>Address space, translasi alamat, segmentasi, dan free-space management.</p>
+                </a>
+
+                <a href="1_Slides/week5_slide.pdf" target="_blank" title="Download PDF"
                    style="position: absolute; bottom: 1.5rem; right: 1.5rem; padding: 8px; color: var(--text-muted); background: var(--card-bg); border-radius: 50%; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; z-index: 10;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -366,6 +447,20 @@
             </a>
             -->
         </div>
+
+        <section class="featured-pdf is-hidden" id="pdf-preview">
+            <div class="featured-header">
+                <div>
+                    <h2 id="preview-title">Preview Slide</h2>
+                    <p id="preview-desc">Preview muncul setelah blok week diklik.</p>
+                </div>
+                <div class="pdf-actions">
+                    <a id="preview-open" href="#" target="_blank">Buka Tab Baru</a>
+                    <a id="preview-download" href="#" download>Unduh PDF</a>
+                </div>
+            </div>
+            <iframe id="preview-frame" class="pdf-embed" src="" title="PDF Preview"></iframe>
+        </section>
 
         <footer>
             &copy; 2026 lectura.id/course/os - Institut Teknologi Sumatera
@@ -405,6 +500,28 @@
             const currentTheme = html.getAttribute('data-theme');
             const newTheme = currentTheme === 'light' ? 'dark' : 'light';
             applyTheme(newTheme);
+        });
+
+        const previewSection = document.getElementById('pdf-preview');
+        const previewTitle = document.getElementById('preview-title');
+        const previewDesc = document.getElementById('preview-desc');
+        const previewFrame = document.getElementById('preview-frame');
+        const previewOpen = document.getElementById('preview-open');
+        const previewDownload = document.getElementById('preview-download');
+
+        document.querySelectorAll('.week-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const pdfUrl = link.dataset.previewUrl;
+                const title = link.dataset.previewTitle || 'Preview Slide';
+                previewTitle.textContent = title;
+                previewDesc.textContent = 'Cocok untuk preview cepat sebelum membuka halaman penuh.';
+                previewFrame.src = `${pdfUrl}#view=FitH`;
+                previewOpen.href = pdfUrl;
+                previewDownload.href = pdfUrl;
+                previewSection.classList.remove('is-hidden');
+                previewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
         });
     </script>
 </body>

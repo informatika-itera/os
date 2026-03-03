@@ -43,3 +43,10 @@
 \contentsline {section}{\numberline {5.4}Percobaan \#3: Akuntansi yang Lebih Baik}{49}{section.5.4}%
 \contentsline {section}{\numberline {5.5}Tuning MLFQ dan Isu Lainnya}{51}{section.5.5}%
 \contentsline {section}{\numberline {5.6}MLFQ: Ringkasan}{52}{section.5.6}%
+\contentsline {chapter}{\numberline {6}Virtual Memory: Abstraksi, Translasi, Segmentasi, dan Free-Space}{55}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Abstraksi Address Space (\textit {vm-intro})}{55}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Interlude API Memori (\textit {vm-api})}{58}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Mekanisme Translasi Alamat (\textit {vm-mechanism})}{59}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Segmentasi (\textit {vm-segmentation})}{62}{section.6.4}%
+\contentsline {section}{\numberline {6.5}Manajemen Free-Space (\textit {vm-freespace})}{64}{section.6.5}%
+\contentsline {section}{\numberline {6.6}Ringkasan Bab}{66}{section.6.6}%
