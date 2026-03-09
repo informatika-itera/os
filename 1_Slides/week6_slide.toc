@@ -1,0 +1,4 @@
+\beamer@sectionintoc {1}{Algoritma Alokasi Memori}{4}{0}{1}
+\beamer@sectionintoc {2}{Fragmentasi Memori}{11}{0}{2}
+\beamer@sectionintoc {3}{Teori Paging}{14}{0}{3}
+\beamer@sectionintoc {4}{Ringkasan dan Latihan}{17}{0}{4}

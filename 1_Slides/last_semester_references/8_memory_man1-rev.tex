@@ -1,0 +1,1412 @@
+\documentclass[10pt,aspectratio=169]{beamer}
+\usepackage{poly}
+\usepackage[useregional]{datetime2}
+\usepackage{graphicx}  % for images
+\usepackage[table]{xcolor}    % for color with table support
+\usepackage{minted}    % for better code highlighting
+\usepackage[T1]{fontenc}  % for better font encoding
+\usepackage{inconsolata}  % fallback monospace font
+
+% Minted configuration
+\setminted{
+    frame=none,
+    fontsize=\small,
+    linenos=true,
+    numbersep=12pt,
+    bgcolor=white,
+    style=friendly,
+    autogobble,
+    breaklines,
+    baselinestretch=1.2
+}
+
+% Add slide numbers to the footer
+\setbeamertemplate{footline}[frame number]
+\setbeamertemplate{navigation symbols}{}  % Remove navigation symbols
+
+% Define a centered minted environment
+\newenvironment{centeredcode}{\begin{center}}{\end{center}}
+
+\title{Operating System (IF2223)}
+\subtitle{Memory Management 1}
+\author{Martin C.T. Manullang, Eko Dwi Nugroho, Ilham Firman Ashari}
+\institute[COMP]{Teknik Informatika, ITERA}
+\date{2025}
+
+\begin{document}
+\maketitle
+
+\section{Pendahuluan}
+
+% --- Frame: Memory in Operating Systems ---
+\begin{frame}{Memori dalam Sistem Operasi}
+    \framesubtitle{Komponen Utama dalam Operasi Sistem}
+    \begin{itemize}
+        \item Memori adalah komponen \textbf{utama} dalam operasi sistem komputer modern
+        \item Terdiri dari array byte yang besar, masing-masing dengan alamat tersendiri
+        \item CPU berinteraksi dengan memori untuk:
+        \begin{itemize}
+            \item Mengambil instruksi
+            \item Menyimpan dan mengambil operand
+            \item Menulis hasil operasi
+        \end{itemize}
+        \item Unit memori hanya melihat aliran alamat
+        \item Memori tidak mengetahui bagaimana alamat dihasilkan atau tujuannya
+    \end{itemize}
+\end{frame}
+
+% --- Frame: Instruction Execution Cycle ---
+\begin{frame}{Siklus Eksekusi Instruksi}
+    \framesubtitle{Peran Memori}
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Siklus Instruksi Tipikal:}
+            \begin{enumerate}
+                \item Ambil instruksi dari memori
+                \item Decode instruksi
+                \item Ambil operand dari memori (jika diperlukan)
+                \item Eksekusi instruksi
+                \item Simpan hasil ke memori (jika diperlukan)
+            \end{enumerate}
+        
+        \column{0.48\textwidth}
+            \begin{alertblock}{Konsep Kunci}
+                Untuk eksekusi yang tepat, instruksi dan data harus dapat diakses dalam memori saat dibutuhkan.
+            \end{alertblock}
+            
+            \begin{block}{Fokus Manajemen Memori}
+                Fokus kita adalah pada urutan alamat memori yang dihasilkan oleh program yang berjalan, bukan bagaimana alamat tersebut dihasilkan.
+            \end{block}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Siklus Eksekusi Instruksi - Dasar ---
+\begin{frame}{Siklus Eksekusi Instruksi}
+    \framesubtitle{Konsep Dasar}
+    
+    \begin{block}{Definisi}
+        Serangkaian langkah yang diambil CPU untuk mengeksekusi setiap instruksi program.
+    \end{block}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Langkah-langkah Utama:}
+            \begin{enumerate}
+                \item Fetch: Ambil instruksi dari memori
+                \item Decode: Terjemahkan instruksi
+                \item Execute: Jalankan instruksi
+                \item Store: Simpan hasil (jika ada)
+            \end{enumerate}
+            
+        \column{0.48\textwidth}
+            \begin{center}
+                \includegraphics[width=0.70\textwidth]{figure/fig8-cpuinscycle.png}
+            \end{center}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Contoh Kasus Nyata ---
+\begin{frame}{Contoh Kasus Nyata}
+    \framesubtitle{Instruksi Penjumlahan Sederhana}
+    
+    \begin{center}
+        Instruksi: \texttt{ADD A, B} (Tambahkan nilai B ke A)
+    \end{center}
+    
+    \begin{enumerate}
+        \item \textbf{Fetch}: CPU mengambil kode instruksi \texttt{ADD A, B} dari alamat 0x1000 di memori
+        \item \textbf{Decode}: CPU mengidentifikasi bahwa ini adalah operasi penjumlahan dengan operand A dan B
+        \item \textbf{Operand Fetch}: CPU mengambil nilai A (5) dari alamat 0x2000 dan B (3) dari alamat 0x2004
+        \item \textbf{Execute}: CPU melakukan 5 + 3 = 8
+        \item \textbf{Store}: CPU menyimpan hasil 8 kembali ke alamat memori A (0x2000)
+    \end{enumerate}
+\end{frame}
+
+
+
+% --- Frame: Basic Hardware Considerations ---
+\begin{frame}{Pertimbangan Hardware Dasar}
+    \framesubtitle{Hierarki Akses Memori}
+    \begin{itemize}
+        \item \textbf{Akses Langsung CPU:} Terbatas pada register dan memori utama
+            \begin{itemize}
+                \item Tidak ada akses langsung ke disk atau penyimpanan sekunder lainnya
+            \end{itemize}
+        \item \textbf{Perbedaan Kecepatan Akses:}
+            \begin{itemize}
+                \item \textbf{Register:} Dapat diakses dalam satu siklus clock CPU
+                \item \textbf{Memori Utama:} Membutuhkan beberapa siklus clock
+            \end{itemize}
+        \item \textbf{Solusi untuk Kesenjangan Performa:}
+            \begin{itemize}
+                \item Cache memori antara CPU dan memori utama
+                \item Terletak pada chip CPU untuk akses cepat
+                \item Dikelola oleh hardware (bukan OS)
+            \end{itemize}
+    \end{itemize}
+\end{frame}
+
+% --- Frame: Memory Protection ---
+\begin{frame}{Proteksi Memori}
+    \framesubtitle{Memastikan Operasi Sistem yang Benar}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Kebutuhan Proteksi:}
+            \begin{itemize}
+                \item Melindungi OS dari proses pengguna
+                \item Melindungi proses pengguna satu sama lain
+                \item Implementasi berbasis hardware untuk efisiensi
+            \end{itemize}
+            
+            \textbf{Ruang Memori Per-Proses:}
+            \begin{itemize}
+                \item Fundamental untuk eksekusi konkuren
+                \item Mendefinisikan rentang alamat yang legal
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \begin{center}
+                \includegraphics[width=0.75\textwidth]{figure/fig8-1.png} % Replace with actual base/limit register image
+            \end{center}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Memory Protection Implementation ---
+\begin{frame}{Implementasi Proteksi Memori}
+    \framesubtitle{Register Base dan Limit}
+    
+    \begin{block}{Cara Kerjanya}
+        \begin{itemize}
+            \item \textbf{Register Base:} Menyimpan alamat memori fisik legal terkecil
+            \item \textbf{Register Limit:} Menentukan ukuran rentang alamat
+            \item Contoh: Base = 300040, Limit = 120900
+            \item Alamat legal: 300040 sampai 420939
+        \end{itemize}
+    \end{block}
+    
+    \begin{alertblock}{Mekanisme Proteksi}
+        \begin{itemize}
+            \item Hardware CPU membandingkan setiap alamat yang dihasilkan dalam mode pengguna
+            \item Upaya akses ilegal akan trap ke OS sebagai error fatal
+            \item Mencegah modifikasi kode/data OS atau memori pengguna lain
+            \item Register base dan limit hanya dapat diisi oleh OS menggunakan instruksi khusus
+        \end{itemize}
+    \end{alertblock}
+\end{frame}
+
+% --- Frame: Operating System Memory Access ---
+\begin{frame}{Akses Memori Sistem Operasi}
+    \framesubtitle{Operasi Istimewa}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Hak Istimewa OS:}
+            \begin{itemize}
+                \item Akses tak terbatas ke semua memori dalam mode kernel
+                \item Dapat mengakses memori OS dan memori pengguna
+            \end{itemize}
+            
+            \textbf{Operasi Memori Penting untuk OS:}
+            \begin{itemize}
+                \item Memuat program pengguna ke dalam memori
+                \item Mencatat program jika terjadi error
+                \item Mengakses dan memodifikasi parameter system call
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \textbf{Operasi Memori untuk Multitasking:}
+            \begin{itemize}
+                \item Context switching antar proses
+                \item Menyimpan status proses dari register ke memori
+                \item Memuat konteks proses berikutnya dari memori ke register
+                \item Melakukan I/O ke dan dari memori pengguna
+                \item Menyediakan layanan sistem lainnya
+            \end{itemize}
+    \end{columns}
+\end{frame}
+
+\section{Address Binding}
+
+% --- Frame: Introduction to Address Binding ---
+\begin{frame}{Address Binding}
+    \framesubtitle{Konsep Dasar}
+    
+    \begin{block}{Definisi}
+        Address binding adalah proses mengaitkan alamat memori pada instruksi dan data program.
+    \end{block}
+    
+    \begin{itemize}
+        \item Program berada di disk sebagai berkas biner yang dapat dieksekusi
+        \item Untuk dijalankan, program harus dimuat ke dalam memori
+        \item Selama eksekusi, program mengakses instruksi dan data dari memori
+        \item Setelah terminasi, memori yang digunakan program dibebaskan
+        \item Sistem operasi memungkinkan proses ditempatkan pada berbagai bagian memori fisik
+    \end{itemize}
+    
+    \begin{alertblock}{Fokus Utama}
+        Memahami kapan dan bagaimana alamat memori diresolved selama siklus hidup program.
+    \end{alertblock}
+\end{frame}
+
+% --- Frame: Address Spaces ---
+\begin{frame}{Ruang Alamat dalam Eksekusi Program}
+    \framesubtitle{Tahapan Transformasi Alamat}
+    
+    \begin{columns}[T]
+        \column{0.60\textwidth}
+            \begin{itemize}
+                \item \textbf{Alamat Simbolik:}
+                \begin{itemize}
+                    \item Variabel dan label dalam kode sumber (seperti \texttt{count})
+                \end{itemize}
+                
+                \item \textbf{Alamat Relatif (Relocatable):}
+                \begin{itemize}
+                    \item Alamat offset ("14 byte dari awal modul")
+                    \item Dihasilkan oleh compiler
+                \end{itemize}
+                
+                \item \textbf{Alamat Absolut (Fisik):}
+                \begin{itemize}
+                    \item Alamat memori fisik aktual (seperti 74014)
+                    \item Alamat memori yang sebenarnya digunakan CPU
+                \end{itemize}
+            \end{itemize}
+            
+        \column{0.35\textwidth}
+            \begin{center}
+                \includegraphics[width=0.7\textwidth]{figure/fig8-3.png}
+            \end{center}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Proses Kompilasi dan Eksekusi ---
+\begin{frame}{Proses Kompilasi dan Eksekusi}
+    \framesubtitle{Dari Kode Sumber hingga Program dalam Memori}
+    
+    \begin{block}{Tahapan Penting}
+        \begin{itemize}
+            \item Proses mengubah program dari kode sumber menjadi program yang berjalan di memori melibatkan beberapa tahap
+            \item Setiap tahap melakukan transformasi alamat tertentu
+            \item Proses ini menentukan bagaimana alamat pada kode sumber akhirnya diterjemahkan menjadi alamat memori fisik
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+% --- Frame: Tahap 1 - Kompilasi ---
+\begin{frame}{Tahap 1: Kompilasi}
+    \framesubtitle{Dari Source Program ke Object File}
+    
+    \begin{itemize}
+        \item \textbf{Input}: Source program (kode sumber)
+        \begin{itemize}
+            \item Berisi variabel dan fungsi dengan \textbf{alamat simbolik}
+            \item Contoh: \texttt{int count;}, \texttt{void calculate()}
+        \end{itemize}
+        
+        \item \textbf{Proses}: Compiler
+        \begin{itemize}
+            \item Mengubah kode sumber menjadi kode assembly
+            \item Mengganti alamat simbolik dengan \textbf{alamat relatif}
+        \end{itemize}
+        
+        \item \textbf{Output}: Object file
+        \begin{itemize}
+            \item Kode mesin dengan alamat relatif
+            \item Format: \texttt{.o} (Unix/Linux), \texttt{.obj} (Windows)
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+% --- Frame: Tahap 2 - Linking ---
+\begin{frame}{Tahap 2: Linking}
+    \framesubtitle{Dari Object File ke Executable File}
+    
+    \begin{itemize}
+        \item \textbf{Input}: Multiple object files dan library files
+        \begin{itemize}
+            \item Object file dari kode sumber utama
+            \item Object file dari modul tambahan
+            \item Library standar dan khusus
+        \end{itemize}
+        
+        \item \textbf{Proses}: Linker
+        \begin{itemize}
+            \item Menggabungkan semua object file
+            \item Me-resolve referensi eksternal
+            \item Menghasilkan ruang alamat tunggal dan terstruktur
+        \end{itemize}
+        
+        \item \textbf{Output}: Executable file
+        \begin{itemize}
+            \item Program yang siap dieksekusi
+            \item Format: \texttt{ELF} (Linux), \texttt{.exe} (Windows)
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+% --- Frame: Tahap 3 - Loading ---
+\begin{frame}{Tahap 3: Loading}
+    \framesubtitle{Dari Executable File ke Program dalam Memori}
+    
+    \begin{itemize}
+        \item \textbf{Input}: Executable file
+        \begin{itemize}
+            \item Program yang siap dieksekusi dari disk
+        \end{itemize}
+        
+        \item \textbf{Proses}: Loader
+        \begin{itemize}
+            \item Membaca executable file ke memori
+            \item Mengalokasikan ruang memori untuk program
+            \item Mengubah alamat relatif menjadi \textbf{alamat absolut}
+        \end{itemize}
+        
+        \item \textbf{Tambahan}: Dynamic Linking
+        \begin{itemize}
+            \item Menghubungkan \textit{dynamically linked libraries} (DLL)
+            \item Contoh: \texttt{.so} (Linux), \texttt{.dll} (Windows)
+            \item Menghemat memori dengan berbagi kode
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+% --- Frame: Program dalam Memori ---
+\begin{frame}{Program dalam Memori}
+    \framesubtitle{Hasil Akhir Proses}
+    
+    \textbf{Program yang Siap Dieksekusi:}
+    \begin{itemize}
+        \item Seluruh alamat kini adalah \textbf{alamat absolut}
+        \item Program memiliki ruang alamat tertentu dalam memori fisik
+        \item CPU dapat mengakses instruksi dan data langsung
+        \item Sistem operasi mengatur eksekusi program
+    \end{itemize}
+    
+    \textbf{Komponen dalam Memori:}
+    \begin{itemize}
+        \item Segmen kode (code segment)
+        \item Segmen data (data segment)
+        \item Stack untuk fungsi dan variabel lokal
+        \item Heap untuk alokasi memori dinamis
+    \end{itemize}
+\end{frame}
+
+% --- Frame: Ringkasan Proses ---
+\begin{frame}{Ringkasan Proses Transformasi Program}
+    \framesubtitle{Dari Kode Sumber hingga Eksekusi}
+    
+    \begin{enumerate}
+        \item \textbf{Source Program}
+        \begin{itemize}
+            \item Kode yang ditulis dalam bahasa pemrograman
+            \item Menggunakan \textbf{alamat simbolik}
+        \end{itemize}
+        
+        \item \textbf{Compiler} $\Rightarrow$ \textbf{Object File}
+        \begin{itemize}
+            \item Mengubah alamat simbolik menjadi \textbf{alamat relatif}
+        \end{itemize}
+        
+        \item \textbf{Linker} $\Rightarrow$ \textbf{Executable File}
+        \begin{itemize}
+            \item Menggabungkan object files dan library
+            \item Menghasilkan program yang siap dieksekusi
+        \end{itemize}
+        
+        \item \textbf{Loader + Dynamic Libraries} $\Rightarrow$ \textbf{Program in Memory}
+        \begin{itemize}
+            \item Mengubah alamat relatif menjadi \textbf{alamat absolut}
+            \item Program siap dieksekusi oleh CPU
+        \end{itemize}
+    \end{enumerate}
+\end{frame}
+
+\section{Logical vs Physical Address Space}
+% --- Frame: Logical vs Physical Address Spaces ---
+\begin{frame}{Logical vs Physical Address Space}
+    \framesubtitle{Konsep Dasar}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Logical Address (Virtual Address):}
+            \begin{itemize}
+                \item Alamat yang dihasilkan oleh CPU saat eksekusi
+                \item Referensi ke lokasi memori independen dari alokasi memori sebenarnya
+                \item Pengguna program hanya melihat ruang alamat logis
+                \item Juga disebut sebagai alamat virtual
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \textbf{Physical Address:}
+            \begin{itemize}
+                \item Alamat lokasi sebenarnya di memori fisik
+                \item Alamat yang benar-benar diakses pada unit memori
+                \item Tidak terlihat oleh program pengguna
+                \item Hanya digunakan oleh unit memori untuk akses aktual
+            \end{itemize}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Memory Management Unit (MMU) ---
+\begin{frame}{Memory Management Unit (MMU)}
+    \framesubtitle{Perangkat Hardware untuk Translasi Alamat}
+    
+    \begin{block}{Definisi}
+        MMU adalah komponen hardware yang menerjemahkan alamat logis menjadi alamat fisik secara real-time saat eksekusi program.
+    \end{block}
+    
+    \begin{columns}[T]
+        \column{0.58\textwidth}
+            \textbf{Fungsi Utama MMU:}
+            \begin{itemize}
+                \item Mentranslasi setiap alamat logis yang dihasilkan CPU
+                \item Menyembunyikan detail memori fisik dari program
+                \item Menyediakan mekanisme proteksi memori
+                \item Mendukung berbagai skema manajemen memori
+            \end{itemize}
+            
+        \column{0.38\textwidth}
+            \begin{center}
+            \textbf{MMU}
+            \begin{itemize}
+                \item CPU $\rightarrow$ MMU $\rightarrow$ Memory
+                \item Logical Address $\rightarrow$ Physical Address
+            \end{itemize}
+            \end{center}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Logical vs Physical Address - Daily Life Illustration ---
+\begin{frame}{Ilustrasi Sehari-hari: Logical vs Physical Address}
+    \framesubtitle{Perpustakaan Kota}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Logical Address:}
+            \begin{itemize}
+                \item \textbf{Katalog perpustakaan} yang mencantumkan buku-buku
+                \item Pengunjung mencari buku berdasarkan \textbf{sistem katalog}
+                \item Pengunjung tidak perlu tahu di rak mana fisik buku berada
+                \item Katalog bisa tetap sama meskipun tata letak perpustakaan berubah
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \textbf{Physical Address:}
+            \begin{itemize}
+                \item \textbf{Lokasi sebenarnya} buku pada rak tertentu
+                \item Contoh: "Lantai 2, Rak E, Baris 3"
+                \item Pustakawan menggunakan pemetaan dari nomor katalog ke lokasi fisik
+                \item Lokasi fisik dapat berubah (reorganisasi) tanpa mengubah katalog
+            \end{itemize}
+    \end{columns}
+    
+    \vspace{0.3cm}
+    \begin{alertblock}{Analogi MMU}
+        Pustakawan bertindak seperti MMU - menerjemahkan referensi katalog (alamat logis) menjadi lokasi buku fisik (alamat fisik) saat pengunjung meminta buku.
+    \end{alertblock}
+\end{frame}
+
+% --- Frame: Relocation Register ---
+\begin{frame}{Relocation Register}
+    \framesubtitle{Mekanisme Sederhana untuk Dynamic Relocation}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Definisi:}
+            \begin{itemize}
+                \item Register perangkat keras yang menyimpan nilai \textbf{base address}
+                \item Alamat awal dari area memori yang dialokasikan untuk sebuah proses
+                \item Digunakan untuk menghitung alamat fisik dari alamat logis
+            \end{itemize}
+            
+            \textbf{Cara Kerja Sederhana:}
+            \begin{itemize}
+                \item \texttt{Alamat Fisik = Relocation Register + Alamat Logis}
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \begin{center}
+                \textbf{Prinsip Relocation Register}
+                \vspace{0.5cm}
+                \begin{tabular}{|c|c|c|}
+                    \hline
+                    \textbf{Alamat Logis} & \textbf{+} & \textbf{Relocation Reg.} \\
+                    \hline
+                    346 & + & 14000 \\
+                    \hline
+                    \multicolumn{3}{|c|}{\textbf{= 14346 (Alamat Fisik)}} \\
+                    \hline
+                \end{tabular}
+            \end{center}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Dynamic Relocation Scheme ---
+\begin{frame}{Dynamic Relocation Scheme}
+    \framesubtitle{Menggunakan Relocation Register}
+    
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+            \textbf{Prinsip Kerja:}
+                        \begin{itemize}
+                            \item Setiap alamat logis program ditambahkan ke nilai relocation register
+                            \item Hardware menangani penambahan secara otomatis saat runtime
+                        \end{itemize}
+                        
+                        \textbf{Manfaat:}
+                        \begin{itemize}
+                            \item Program dapat dimuat di lokasi memori berbeda tanpa modifikasi kode
+                            \item Relokasi dilakukan secara transparan
+                        \end{itemize}
+            
+        \column{0.42\textwidth}
+            \begin{block}{Contoh Numerik}
+                \begin{itemize}
+                    \item Relocation register = 14000
+                    \item Alamat logis = 346
+                    \item Alamat fisik = 14000 + 346 = 14346
+                \end{itemize}
+            \end{block}
+            
+            \begin{alertblock}{Keamanan}
+                Kombinasi dengan register limit mencegah proses mengakses di luar area yang dialokasikan.
+            \end{alertblock}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Demonstration of Relocation Register ---
+\begin{frame}{Demonstrasi Relocation Register}
+    \framesubtitle{Kasus Nyata: Multitasking OS}
+    
+    \begin{block}{Skenario}
+        Sistem operasi memuat tiga program berbeda ke dalam memori secara bersamaan.
+    \end{block}
+
+    \begin{center}
+        \begin{tabular}{|l|c|c|c|}
+            \hline
+            \textbf{Program} & \textbf{Base Address} & \textbf{Limit} & \textbf{Range di Memori Fisik} \\
+            \hline
+            Word Processor & 20000 & 8000 & 20000-27999 \\
+            \hline
+            Game & 35000 & 12000 & 35000-46999 \\
+            \hline
+            Browser & 55000 & 15000 & 55000-69999 \\
+            \hline
+        \end{tabular}
+    \end{center}
+\end{frame}
+
+% --- Frame: Praktik Relocation Register - Program View ---
+\begin{frame}{Relocation Register dalam Praktik}
+    \framesubtitle{Perspektif Program}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Kode Game - Perspektif Program:}
+            \begin{itemize}
+                \item Program ditulis dan dikompilasi dengan asumsi dimulai dari alamat 0
+                \item Code segment: 0-4999
+                \item Data segment: 5000-9999
+                \item Stack: 10000-11999
+            \end{itemize}
+            \begin{block}{Instruksi dalam Program}
+                LOAD dari alamat 6500 \\
+                JUMP ke alamat 2500
+            \end{block}
+            
+        \column{0.48\textwidth}
+            \textbf{Relocation dalam Hardware:}
+            \begin{itemize}
+                \item Relocation register = 35000
+                \item LOAD dari 35000+6500 = 41500
+                \item JUMP ke 35000+2500 = 37500
+            \end{itemize}
+            \begin{alertblock}{Keuntungan}
+                Program tidak tahu alamat fisiknya. Bisa dipindahkan ke lokasi memori berbeda tanpa perubahan kode.
+            \end{alertblock}
+    \end{columns}
+\end{frame}
+
+
+% --- Frame: Perlindungan Memori dengan Base dan Limit ---
+\begin{frame}{Perlindungan Memori dengan Base dan Limit}
+    \framesubtitle{Contoh Kasus Operasional}
+    
+    \textbf{Skenario:} Browser mencoba mengakses alamat yang tidak valid
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Kasus 1: Akses Valid}
+            \begin{itemize}
+                \item Alamat logis: 12500
+                \item Limit: 15000
+                \item Akses valid karena 12500 < 15000
+                \item Alamat fisik: 55000 (base) + 12500 = 67500
+                \item Operasi berhasil
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \textbf{Kasus 2: Akses Tidak Valid}
+            \begin{itemize}
+                \item Alamat logis: 16200
+                \item Limit: 15000
+                \item Akses tidak valid karena 16200 > 15000
+                \item Hardware mendeteksi pelanggaran batas
+                \item Menghasilkan segmentation fault
+                \item OS menghentikan program yang melanggar
+            \end{itemize}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Visualisasi Dynamic Relocation ---
+\begin{frame}{Visualisasi Dynamic Relocation}
+    \framesubtitle{Pemetaan Ruang Alamat dengan Relocation Register}
+    
+    \begin{center}
+        \begin{tabular}{|c|c|}
+            \hline
+            \textbf{Logical Address Space} & \textbf{Physical Address Space} \\
+            \hline
+            0 & 14000 (Base) \\
+            \hline
+            100 & 14100 \\
+            \hline
+            200 & 14200 \\
+            \hline
+            ... & ... \\
+            \hline
+            4000 (Limit) & 18000 \\
+            \hline
+        \end{tabular}
+    \end{center}
+    
+    \begin{itemize}
+        \item Program ditulis seolah-olah dimuat pada alamat 0
+        \item Relocation register menambahkan offset ke setiap alamat
+        \item Program dapat dieksekusi di lokasi memori manapun tanpa modifikasi
+        \item Berfungsi seperti "memindahkan" seluruh ruang alamat logis ke lokasi fisik
+    \end{itemize}
+\end{frame}
+
+\section{Memory Allocation}
+
+% --- Frame: Memory Allocation Basics ---
+\begin{frame}{Alokasi Memori}
+    \framesubtitle{Konsep Dasar}
+    
+    \begin{block}{Definisi}
+        Alokasi memori adalah proses pemberian ruang memori kepada proses yang membutuhkan sumber daya memori untuk eksekusi.
+    \end{block}
+    
+    \begin{itemize}
+        \item Sistem operasi melakukan pembagian memori ke partisi dengan ukuran bervariasi
+        \item Setiap partisi dapat berisi tepat satu proses
+        \item OS menyimpan tabel yang menunjukkan bagian memori yang tersedia dan yang sudah terpakai
+        \item Awalnya, semua memori tersedia sebagai satu blok besar (disebut \textit{hole})
+        \item Seiring waktu, memori akan berisi kumpulan \textit{holes} dengan berbagai ukuran
+    \end{itemize}
+\end{frame}
+
+% --- Frame: Memory Allocation Process ---
+\begin{frame}{Proses Alokasi Memori}
+    \framesubtitle{Mekanisme Dasar}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Proses Alokasi:}
+            \begin{itemize}
+                \item OS mempertimbangkan kebutuhan memori proses dan jumlah memori yang tersedia
+                \item Ketika proses dialokasikan ruang, proses dimuat ke memori
+                \item Setelah termuat, proses dapat berkompetisi untuk waktu CPU
+                \item Ketika proses berakhir, memori dibebaskan kembali
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \textbf{Ketika Memori Tidak Cukup:}
+            \begin{itemize}
+                \item Opsi 1: Tolak proses dan berikan pesan error
+                \item Opsi 2: Tempatkan proses ke dalam \textit{wait queue}
+                \item Ketika memori dibebaskan, OS memeriksa \textit{wait queue}
+                \item Jika memori cukup, proses yang menunggu dapat dilayani
+            \end{itemize}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Dynamic Storage Allocation Problem ---
+\begin{frame}{Dynamic Storage Allocation Problem}
+    \framesubtitle{Tantangan Alokasi Memori}
+    
+    \begin{block}{Proses Umum Alokasi}
+        \begin{itemize}
+            \item Ketika proses tiba dan membutuhkan memori, sistem mencari \textit{hole} yang cukup besar
+            \item Jika \textit{hole} terlalu besar, dipecah menjadi dua bagian:
+            \begin{itemize}
+                \item Satu bagian untuk proses yang datang
+                \item Bagian lain dikembalikan ke kumpulan \textit{holes}
+            \end{itemize}
+            \item Ketika proses berakhir, blok memori dikembalikan sebagai \textit{hole}
+            \item Jika \textit{hole} baru berdekatan dengan \textit{holes} lain, keduanya digabungkan
+        \end{itemize}
+    \end{block}
+    
+    \begin{alertblock}{Masalah Inti}
+        Bagaimana memenuhi permintaan memori dengan ukuran n dari daftar \textit{free holes} yang tersedia?
+    \end{alertblock}
+\end{frame}
+
+% --- Frame: Memory Allocation Strategies ---
+\begin{frame}{Strategi Alokasi Memori}
+    \framesubtitle{Pendekatan Umum}
+    
+    \begin{block}{Strategi-strategi Utama}
+        Ada tiga strategi umum yang digunakan untuk memilih \textit{free hole} dari kumpulan \textit{holes} yang tersedia:
+        \begin{enumerate}
+            \item \textbf{First-fit}
+            \item \textbf{Best-fit}
+            \item \textbf{Worst-fit}
+        \end{enumerate}
+    \end{block}
+    
+    \begin{alertblock}{Tujuan}
+        Setiap strategi berusaha mengelola fragmentasi memori dan meningkatkan efisiensi penggunaan memori dengan cara yang berbeda.
+    \end{alertblock}
+\end{frame}
+
+% --- Frame: First-Fit Strategy ---
+\begin{frame}{First-Fit Strategy}
+    \framesubtitle{Strategi Alokasi Pertama-Cocok}
+    
+    \begin{block}{Definisi}
+        \textit{First-fit} mengalokasikan \textit{hole} pertama yang ditemukan yang cukup besar untuk menampung proses.
+    \end{block}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Cara Kerja:}
+            \begin{itemize}
+                \item Memindai daftar memori dari awal
+                \item Memilih \textit{hole} pertama yang ukurannya ≥ kebutuhan proses
+                \item Algoritma berhenti segera setelah menemukan \textit{hole} yang cocok
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \textbf{Karakteristik:}
+            \begin{itemize}
+                \item \textbf{Kecepatan:} Sangat cepat karena pencarian minimal
+                \item \textbf{Implementasi:} Sederhana
+                \item \textbf{Efisiensi:} Terkadang meninggalkan \textit{holes} kecil di memori awal
+                \item \textbf{Penggunaan:} Sering digunakan dalam praktik
+            \end{itemize}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Best-Fit Strategy ---
+\begin{frame}{Best-Fit Strategy}
+    \framesubtitle{Strategi Alokasi Terbaik-Cocok}
+    
+    \begin{block}{Definisi}
+        \textit{Best-fit} mengalokasikan \textit{hole} terkecil yang masih cukup besar untuk menampung proses.
+    \end{block}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Cara Kerja:}
+            \begin{itemize}
+                \item Memindai seluruh daftar memori
+                \item Mencari \textit{hole} dengan ukuran paling mendekati kebutuhan proses
+                \item Memilih \textit{hole} dengan sisa ruang terkecil
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \textbf{Karakteristik:}
+            \begin{itemize}
+                \item \textbf{Kecepatan:} Lebih lambat (harus memindai seluruh daftar)
+                \item \textbf{Fragmentasi:} Meminimalkan fragmentasi eksternal
+                \item \textbf{Efisiensi:} Sering menghasilkan \textit{holes} yang terlalu kecil untuk digunakan
+                \item \textbf{Pencarian:} Lebih intensif dibanding \textit{first-fit}
+            \end{itemize}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Worst-Fit Strategy ---
+\begin{frame}{Worst-Fit Strategy}
+    \framesubtitle{Strategi Alokasi Terburuk-Cocok}
+    
+    \begin{block}{Definisi}
+        \textit{Worst-fit} mengalokasikan \textit{hole} terbesar yang tersedia untuk menampung proses.
+    \end{block}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Cara Kerja:}
+            \begin{itemize}
+                \item Memindai seluruh daftar memori
+                \item Mencari \textit{hole} dengan ukuran paling besar
+                \item Memilih \textit{hole} dengan sisa ruang terbesar
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \textbf{Karakteristik:}
+            \begin{itemize}
+                \item \textbf{Kecepatan:} Lambat (harus memindai seluruh daftar)
+                \item \textbf{Pemikiran:} Meninggalkan \textit{holes} yang cukup besar untuk digunakan
+                \item \textbf{Realitas:} Cepat menghabiskan \textit{holes} besar
+                \item \textbf{Performa:} Secara umum lebih buruk dari \textit{first-fit} dan \textit{best-fit}
+            \end{itemize}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Perbandingan Strategi ---
+\begin{frame}{Perbandingan Strategi Alokasi}
+    \framesubtitle{First-fit vs Best-fit vs Worst-fit}
+    
+    \begin{center}
+        \begin{tabular}{|l|c|c|c|}
+            \hline
+            \textbf{Aspek} & \textbf{First-fit} & \textbf{Best-fit} & \textbf{Worst-fit} \\
+            \hline
+            Kecepatan & Tinggi & Sedang & Rendah \\
+            \hline
+            Fragmentasi & Sedang & Tinggi (banyak \textit{tiny holes}) & Rendah \\
+            \hline
+            Pemanfaatan memori & Baik & Baik & Kurang baik \\
+            \hline
+            Kompleksitas implementasi & Rendah & Sedang & Sedang \\
+            \hline
+            Performa keseluruhan & Sangat baik & Baik & Kurang baik \\
+            \hline
+        \end{tabular}
+    \end{center}
+    
+    \begin{alertblock}{Catatan Penting}
+        Studi simulasi menunjukkan bahwa \textit{first-fit} dan \textit{best-fit} lebih baik daripada \textit{worst-fit} dalam hal pemanfaatan memori dan waktu.
+    \end{alertblock}
+\end{frame}
+
+% --- Frame: Contoh Kasus - Strategi Alokasi Memori ---
+\begin{frame}{Contoh Kasus: Strategi Alokasi Memori}
+    \framesubtitle{Perbandingan Algoritma dalam Situasi Nyata}
+    
+    \begin{block}{Kasus}
+        Diberikan partisi memori sebagai berikut:
+        \begin{itemize}
+            \item 100K, 500K, 200K, 300K, dan 600K (berurutan)
+        \end{itemize}
+        
+        Bagaimana algoritma First-fit, Best-fit, dan Worst-fit akan menempatkan proses berikut?
+        \begin{itemize}
+            \item 212K, 417K, 112K, dan 624K (berurutan)
+        \end{itemize}
+    \end{block}
+    
+    \begin{alertblock}{Pertanyaan}
+        Algoritma mana yang membuat penggunaan memori paling efisien?
+    \end{alertblock}
+\end{frame}
+
+% --- Frame: First-Fit Approach Solution ---
+\begin{frame}{Solusi First-Fit Approach}
+    \framesubtitle{Proses Alokasi Langkah demi Langkah}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Awal:} 100K, 500K, 200K, 300K, 600K
+            
+            \textbf{Proses 212K:}
+            \begin{itemize}
+                \item Tidak muat di 100K
+                \item Muat di 500K $\rightarrow$ Tersisa 288K
+                \item Status: [100K][288K][200K][300K][600K]
+            \end{itemize}
+            
+            \textbf{Proses 417K:}
+            \begin{itemize}
+                \item Tidak muat di 100K, 288K
+                \item Tidak muat di 200K
+                \item Muat di 300K $\rightarrow$ Tidak ada sisa
+                \item Status: [100K][288K][200K][0][600K]
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \textbf{Proses 112K:}
+            \begin{itemize}
+                \item Muat di 100K $\rightarrow$ Tidak ada sisa
+                \item Status: [0][288K][200K][0][600K]
+            \end{itemize}
+            
+            \textbf{Proses 624K:}
+            \begin{itemize}
+                \item Tidak muat di 288K, 200K
+                \item Muat di 600K $\rightarrow$ Tidak ada sisa
+                \item Status: [0][288K][200K][0][0]
+            \end{itemize}
+            
+            \textbf{Akhir:} Memori yang tersisa: 288K + 200K = 488K
+    \end{columns}
+\end{frame}
+
+% --- Frame: Best-Fit Approach Solution ---
+\begin{frame}{Solusi Best-Fit Approach}
+    \framesubtitle{Proses Alokasi Langkah demi Langkah}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Awal:} 100K, 500K, 200K, 300K, 600K
+            
+            \textbf{Proses 212K:}
+            \begin{itemize}
+                \item Best-fit untuk 212K adalah 300K 
+                \item Tersisa 88K di partisi tersebut
+                \item Status: [100K][500K][200K][88K][600K]
+            \end{itemize}
+            
+            \textbf{Proses 417K:}
+            \begin{itemize}
+                \item Best-fit untuk 417K adalah 500K
+                \item Tersisa 83K di partisi tersebut
+                \item Status: [100K][83K][200K][88K][600K]
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \textbf{Proses 112K:}
+            \begin{itemize}
+                \item Best-fit untuk 112K adalah 200K
+                \item Tersisa 88K di partisi tersebut
+                \item Status: [100K][83K][88K][88K][600K]
+            \end{itemize}
+            
+            \textbf{Proses 624K:}
+            \begin{itemize}
+                \item Best-fit untuk 624K adalah 600K
+                \item Tidak ada sisa memori
+                \item Status: [100K][83K][88K][88K][0]
+            \end{itemize}
+            
+            \textbf{Akhir:} Memori yang tersisa: 100K + 83K + 88K + 88K = 359K
+    \end{columns}
+\end{frame}
+
+% --- Frame: Worst-Fit Approach Solution ---
+\begin{frame}{Solusi Worst-Fit Approach}
+    \framesubtitle{Proses Alokasi Langkah demi Langkah}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Awal:} 100K, 500K, 200K, 300K, 600K
+            
+            \textbf{Proses 212K:}
+            \begin{itemize}
+                \item Worst-fit untuk 212K adalah 600K
+                \item Tersisa 388K di partisi tersebut
+                \item Status: [100K][500K][200K][300K][388K]
+            \end{itemize}
+            
+            \textbf{Proses 417K:}
+            \begin{itemize}
+                \item Worst-fit untuk 417K adalah 500K
+                \item Tersisa 83K di partisi tersebut
+                \item Status: [100K][83K][200K][300K][388K]
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \textbf{Proses 112K:}
+            \begin{itemize}
+                \item Worst-fit untuk 112K adalah 388K
+                \item Tersisa 276K di partisi tersebut
+                \item Status: [100K][83K][200K][300K][276K]
+            \end{itemize}
+            
+            \textbf{Proses 624K:}
+            \begin{itemize}
+                \item Tidak ada partisi yang cukup besar
+                \item Proses harus menunggu
+                \item Status: [100K][83K][200K][300K][276K]
+            \end{itemize}
+            
+            \textbf{Akhir:} Memori yang tersisa: 100K + 83K + 200K + 300K + 276K = 959K
+    \end{columns}
+\end{frame}
+
+% --- Frame: Perbandingan dan Kesimpulan ---
+\begin{frame}{Perbandingan dan Kesimpulan}
+    \framesubtitle{Analisis Hasil Algoritma}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Ringkasan Hasil:}
+                
+                \begin{center}
+                    \begin{tabular}{|l|c|c|}
+                      \hline
+                      \textbf{Algoritma} & \textbf{Proses} & \textbf{Memori} \\
+                      & \textbf{Berhasil} & \textbf{Tersisa} \\
+                      \hline
+                      First-fit & 4 & 488K \\
+                      \hline
+                      Best-fit & 4 & 359K \\
+                      \hline
+                      Worst-fit & 3 & 959K \\
+                      \hline
+                    \end{tabular}
+                \end{center}
+            
+        \column{0.48\textwidth}
+            \textbf{Kesimpulan:}
+            \begin{itemize}
+                \item Best-fit menghasilkan penggunaan memori yang paling efisien dengan memori tersisa paling sedikit
+                \item First-fit menggunakan memori dengan efisiensi sedang
+                \item Worst-fit tidak dapat mengakomodasi semua proses dan memiliki fragmentasi tertinggi
+            \end{itemize}
+            
+            \begin{alertblock}{Kunci Takeaway}
+                Untuk kasus ini, Best-fit adalah yang paling efisien dalam penggunaan memori, sementara Worst-fit adalah yang paling tidak efisien.
+            \end{alertblock}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Visualisasi Perbandingan ---
+\begin{frame}{Visualisasi Perbandingan}
+    \framesubtitle{Pemanfaatan Memori pada Setiap Algoritma}
+        
+        \begin{columns}[T]
+            \column{0.48\textwidth}
+                \begin{block}{First-fit}
+                    \begin{itemize}
+                        \item Memori awal: 1700K
+                        \item Memori terpakai: 1365K
+                        \item Efisiensi: 80,3\%
+                    \end{itemize}
+                \end{block}
+                
+                \begin{block}{Best-fit}
+                    \begin{itemize}
+                        \item Memori awal: 1700K
+                        \item Memori terpakai: 1365K
+                        \item Efisiensi: 80,3\%
+                    \end{itemize}
+                \end{block}
+                
+            \column{0.48\textwidth}
+                \begin{block}{Worst-fit}
+                    \begin{itemize}
+                        \item Memori awal: 1700K
+                        \item Memori terpakai: 741K
+                        \item Efisiensi: 43,6\%
+                    \end{itemize}
+                \end{block}
+                
+                \begin{alertblock}{Kesimpulan}
+                    \begin{itemize}
+                        \item First-fit dan Best-fit memiliki efisiensi yang sama (80,3\%)
+                        \item Worst-fit memiliki efisiensi paling rendah (43,6\%)
+                        \item First-fit lebih mudah diimplementasikan dan lebih cepat
+                    \end{itemize}
+                \end{alertblock}
+        \end{columns}
+\end{frame}
+
+\section{Fragmentasi Memori}
+
+% --- Frame: Pengenalan Fragmentasi ---
+\begin{frame}{Fragmentasi Memori}
+    \framesubtitle{Konsekuensi dari Alokasi Dinamis}
+    
+    \begin{block}{Definisi}
+        Fragmentasi adalah kondisi di mana memori terbagi menjadi banyak potongan kecil yang sulit dimanfaatkan secara efisien.
+    \end{block}
+    
+    \begin{itemize}
+        \item Muncul sebagai \textbf{efek samping} dari proses alokasi dan dealokasi memori
+        \item Menyebabkan \textbf{pemborosan} memori meskipun memori total mencukupi
+        \item Mengurangi efisiensi penggunaan sumber daya sistem
+        \item Menjadi masalah serius dalam sistem yang berjalan dalam waktu lama
+    \end{itemize}
+\end{frame}
+
+% --- Frame: Jenis Fragmentasi ---
+\begin{frame}{Jenis Fragmentasi}
+    \framesubtitle{External vs Internal Fragmentation}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{External Fragmentation:}
+            \begin{itemize}
+                \item Total memori bebas cukup untuk permintaan, tetapi tidak bersebelahan
+                \item Memori terpecah menjadi banyak \textit{holes} kecil
+                \item Terjadi di antara blok-blok memori yang terpakai
+                \item Contoh: Total 200KB bebas, tetapi terpecah menjadi blok 50KB, 75KB, dan 75KB
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \textbf{Internal Fragmentation:}
+            \begin{itemize}
+                \item Memori yang dialokasikan lebih besar dari yang diminta
+                \item Ruang ekstra tidak dapat digunakan oleh proses lain
+                \item Terjadi di dalam blok memori terpakai
+                \item Contoh: Proses meminta 90KB, sistem mengalokasikan 100KB, 10KB terbuang
+            \end{itemize}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Visualisasi Fragmentasi Eksternal ---
+\begin{frame}{Visualisasi External Fragmentation}
+    \framesubtitle{Masalah dalam Alokasi Dinamis}
+    
+    \begin{center}
+        \begin{tabular}{|c|c|c|c|c|c|c|c|c|}
+        \hline
+        \multicolumn{9}{|c|}{Memori} \\
+        \hline
+        Proses A & \cellcolor{gray!30}Hole & Proses B & \cellcolor{gray!30}Hole & Proses C & \cellcolor{gray!30}Hole & Proses D & \cellcolor{gray!30}Hole & Proses E \\
+        \hline
+        50K & 20K & 100K & 10K & 75K & 15K & 40K & 25K & 150K \\
+        \hline
+        \end{tabular}
+    \end{center}
+    
+    \begin{alertblock}{Masalah}
+        \begin{itemize}
+            \item Total memori bebas: 20K + 10K + 15K + 25K = 70K
+            \item Memori cukup untuk proses baru yang membutuhkan 65K
+            \item Tetapi tidak ada \textit{hole} tunggal yang cukup besar
+            \item Proses baru harus menunggu meskipun memori total mencukupi
+        \end{itemize}
+    \end{alertblock}
+\end{frame}
+
+% --- Frame: Visualisasi Fragmentasi Internal ---
+\begin{frame}{Visualisasi Internal Fragmentation}
+    \framesubtitle{Pemborosan dalam Alokasi}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \begin{center}
+                \begin{tabular}{|c|c|}
+                \hline
+                \multicolumn{2}{|c|}{Blok Memori 100K} \\
+                \hline
+                \cellcolor{blue!20}Proses A (92K) & \cellcolor{red!20}8K \\
+                \hline
+                \end{tabular}
+                
+                \vspace{0.5cm}
+                
+                \begin{tabular}{|c|c|}
+                \hline
+                \multicolumn{2}{|c|}{Blok Memori 64K} \\
+                \hline
+                \cellcolor{blue!20}Proses B (60K) & \cellcolor{red!20}4K \\
+                \hline
+                \end{tabular}
+            \end{center}
+            
+        \column{0.48\textwidth}
+            \begin{alertblock}{Masalah}
+                \begin{itemize}
+                    \item 8K + 4K = 12K memori terbuang
+                    \item Tidak dapat digunakan oleh proses lain
+                    \item Terjadi karena alokasi blok berukuran tetap
+                    \item Sering terjadi pada sistem dengan alokasi berbasis unit atau halaman
+                \end{itemize}
+            \end{alertblock}
+            
+            \begin{block}{Penyebab Umum}
+                \begin{itemize}
+                    \item Kebutuhan alignment memori
+                    \item Alokasi berbasis blok
+                    \item Kebijakan alokasi yang tidak fleksibel
+                \end{itemize}
+            \end{block}
+    \end{columns}
+\end{frame}
+
+% --- Frame: 50 Percent Rule ---
+\begin{frame}{50 Percent Rule}
+    \framesubtitle{Fenomena dalam External Fragmentation}
+    
+    \begin{block}{Definisi}
+        Untuk alokasi dan dealokasi first-fit acak, hampir 1/3 blok memori akan terbuang karena fragmentasi.
+    \end{block}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Formula:}
+            \begin{itemize}
+                \item Jika N blok terpakai, perkiraan jumlah \textit{holes} = (N+1)/2
+                \item Jika memori rata-rata per proses = P, maka memori yang hilang karena fragmentasi ≈ P/2
+                \item Artinya, fragmentasi eksternal = 1/3 memori total
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \textbf{Implikasi:}
+            \begin{itemize}
+                \item Alokasi memori dinamis tanpa kompaksi akan kehilangan sekitar 1/3 memori
+                \item Sistem harus mengalokasikan memori 50\% lebih besar dari kebutuhan sebenarnya
+                \item Masalah menjadi lebih parah dalam sistem yang berjalan lama
+                \item Performa sistem menurun seiring waktu
+            \end{itemize}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Metode Mengatasi Fragmentasi ---
+\begin{frame}{Mengatasi Fragmentasi}
+    \framesubtitle{Teknik untuk Mengoptimalkan Penggunaan Memori}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Kompaksi (Compaction):}
+            \begin{itemize}
+                \item Menggeser memori untuk menggabungkan \textit{holes} kecil
+                \item Membutuhkan kemampuan relokasi dinamis
+                \item Mahal dalam hal overhead komputasi
+                \item Contoh: Defragmentasi disk
+            \end{itemize}
+            
+            \textbf{Segmentasi:}
+            \begin{itemize}
+                \item Membagi memori logis program menjadi segmen
+                \item Segmen dapat dialokasikan secara terpisah
+                \item Meningkatkan fleksibilitas alokasi
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \textbf{Paging:}
+            \begin{itemize}
+                \item Membagi memori fisik menjadi frame berukuran tetap
+                \item Membagi memori logis menjadi halaman dengan ukuran sama
+                \item Menghilangkan external fragmentation
+                \item Tetapi mungkin menyebabkan internal fragmentation
+            \end{itemize}
+            
+            \textbf{Buddy System:}
+            \begin{itemize}
+                \item Algoritma alokasi yang meminimalkan fragmentasi
+                \item Memecah dan menggabungkan blok memori dalam ukuran pangkat 2
+                \item Memudahkan penggabungan blok memori yang berdekatan
+            \end{itemize}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Kompaksi Memori ---
+\begin{frame}{Kompaksi Memori}
+    \framesubtitle{Mengatasi External Fragmentation}
+    
+    \begin{block}{Definisi}
+        Kompaksi adalah proses menggeser isi memori untuk menggabungkan semua \textit{free space} menjadi satu blok besar.
+    \end{block}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Sebelum Kompaksi:}
+            \begin{center}
+                \begin{tabular}{|c|c|c|c|c|}
+                \hline
+                Proses A & \cellcolor{gray!30}Hole & Proses B & \cellcolor{gray!30}Hole & Proses C \\
+                \hline
+                \end{tabular}
+            \end{center}
+            
+            \textbf{Setelah Kompaksi:}
+            \begin{center}
+                \begin{tabular}{|c|c|c|c|}
+                \hline
+                Proses A & Proses B & Proses C & \cellcolor{gray!30}Hole Besar \\
+                \hline
+                \end{tabular}
+            \end{center}
+            
+        \column{0.48\textwidth}
+            \textbf{Tantangan Kompaksi:}
+            \begin{itemize}
+                \item Biaya waktu tinggi untuk memindahkan proses
+                \item Membutuhkan CPU untuk operasi move
+                \item Hanya mungkin jika relokasi dinamis tersedia
+                \item Semua alamat dalam memori harus diperbarui
+                \item Tidak praktis dilakukan terlalu sering
+            \end{itemize}
+    \end{columns}
+\end{frame}
+
+% --- Frame: Kerugian dari Fragmentasi ---
+\begin{frame}{Kerugian dari Fragmentasi}
+    \framesubtitle{Dampak pada Performa Sistem}
+    
+    \begin{block}{Dampak Jangka Pendek}
+        \begin{itemize}
+            \item Pemborosan memori fisik
+            \item Permintaan alokasi gagal meskipun memori total cukup
+            \item Waktu tunggu proses meningkat
+            \item Peningkatan overhead sistem karena manajemen fragmen kecil
+        \end{itemize}
+    \end{block}
+    
+    \begin{alertblock}{Dampak Jangka Panjang}
+        \begin{itemize}
+            \item Penurunan performa sistem secara keseluruhan
+            \item Peningkatan frekuensi kompaksi memori (overhead tambahan)
+            \item Peningkatan aktivitas swapping ke disk
+            \item Waktu tanggap sistem memburuk
+            \item Throughput sistem menurun
+        \end{itemize}
+    \end{alertblock}
+\end{frame}
+
+% --- Frame: Studi Kasus Fragmentasi ---
+\begin{frame}{Studi Kasus Fragmentasi}
+    \framesubtitle{Sistem Server Web}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \textbf{Skenario:}
+            \begin{itemize}
+                \item Server web dengan memori 8GB
+                \item Menjalankan puluhan worker process
+                \item Setiap worker process membutuhkan memori berbeda
+                \item Proses dimulai dan diakhiri sesuai permintaan
+                \item Sistem berjalan 24/7 tanpa restart
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \textbf{Masalah yang Muncul:}
+            \begin{itemize}
+                \item Setelah beberapa hari, server mulai menolak koneksi baru
+                \item Monitor memori menunjukkan 3GB memori bebas
+                \item Tetapi tidak ada blok cukup besar untuk worker baru
+                \item Fragmentasi eksternal menjadi bottleneck
+                \item Perlu restart untuk 'reset' alokasi memori
+            \end{itemize}
+    \end{columns}
+    
+    \begin{alertblock}{Solusi}
+        Implementasi sistem paging atau algoritma alokasi memori yang lebih efisien seperti buddy system akan mengurangi dampak fragmentasi.
+    \end{alertblock}
+\end{frame}
+
+% --- Frame: Kesimpulan ---
+\begin{frame}{Kesimpulan Fragmentasi}
+    \framesubtitle{Poin-poin Kunci}
+    
+    \begin{itemize}
+        \item Fragmentasi adalah konsekuensi tak terhindarkan dari alokasi dinamis
+        \item External fragmentation: memori terbuang di antara blok-blok terpakai
+        \item Internal fragmentation: memori terbuang di dalam blok terpakai
+        \item 50 Percent Rule menunjukkan besarnya potensi kerugian karena fragmentasi
+        \item Strategi mengatasi fragmentasi:
+        \begin{itemize}
+            \item Kompaksi memori
+            \item Paging dan segmentasi
+            \item Algoritma alokasi efisien (Buddy system)
+        \end{itemize}
+        \item Fragmentasi memiliki dampak signifikan pada performa sistem jangka panjang
+    \end{itemize}
+    
+    \begin{alertblock}{Pertimbangan Desain}
+        Sistem operasi modern menggabungkan berbagai teknik untuk meminimalkan fragmentasi dan mengoptimalkan penggunaan memori.
+    \end{alertblock}
+\end{frame}
+
+\backmatter % generate the final slide
+\end{document}

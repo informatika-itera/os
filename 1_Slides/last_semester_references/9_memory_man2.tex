@@ -1,0 +1,675 @@
+\documentclass[10pt,aspectratio=169]{beamer}
+\usepackage{poly}
+\usepackage[useregional]{datetime2}
+\usepackage{graphicx}  % for images
+\usepackage{xcolor}    % for color
+\usepackage{minted}    % for better code highlighting
+\usepackage[T1]{fontenc}  % for better font encoding
+\usepackage{inconsolata}  % fallback monospace font
+
+% Minted configuration
+\setminted{
+    frame=none,
+    fontsize=\small,
+    linenos=true,
+    numbersep=12pt,
+    bgcolor=white,
+    style=friendly,
+    autogobble,
+    breaklines,
+    baselinestretch=1.2
+}
+
+% Add slide numbers to the footer
+\setbeamertemplate{footline}[frame number]
+\setbeamertemplate{navigation symbols}{}  % Remove navigation symbols
+
+% Define a centered minted environment
+\newenvironment{centeredcode}{\begin{center}}{\end{center}}
+
+\title{Operating System (IF2223)}
+\subtitle{Memory Management 2 (Paging)}
+\author{Martin C.T. Manullang, Eko Dwi Nugroho, Ilham Firman Ashari}
+\institute[COMP]{Teknik Informatika, ITERA}
+\date{2025}
+
+\begin{document}
+\maketitle
+
+\section{Konsep Dasar Paging}
+
+\begin{frame}{Pengertian Paging}
+    \framesubtitle{Teknik Manajemen Memori}
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \begin{block}{Definisi}
+                Paging adalah teknik manajemen memori yang memungkinkan alamat fisik memori tidak harus bersambungan (noncontiguous) saat mengalokasikan ruang untuk proses.
+            \end{block}
+            
+            \begin{itemize}
+                \item Mengatasi fragmentasi eksternal
+                \item Memungkinkan penggunaan memori fisik lebih efisien
+                \item Mendukung implementasi memori virtual
+            \end{itemize}
+            
+        \column{0.48\textwidth}
+            \begin{alertblock}{Kelebihan Paging}
+                \begin{itemize}
+                    \item Tidak ada fragmentasi eksternal
+                    \item Mengurangi overhead pemeliharaan memori
+                    \item Menyederhanakan alokasi memori
+                    \item Mendukung sharing kode antar proses
+                \end{itemize}
+            \end{alertblock}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Page dan Frame}
+    \framesubtitle{Komponen Utama Sistem Paging}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \begin{block}{Page}
+                Unit dari memori logis (ruang alamat proses) dengan ukuran tetap.
+                \begin{itemize}
+                    \item Biasanya berukuran 4KB - 16KB
+                    \item Diidentifikasi dengan page number
+                    \item Seluruh page harus termuat dalam frame
+                \end{itemize}
+            \end{block}
+            
+        \column{0.48\textwidth}
+            \begin{block}{Frame}
+                Unit dari memori fisik dengan ukuran yang sama dengan page.
+                \begin{itemize}
+                    \item Pembagian memori fisik menjadi blok-blok tetap
+                    \item Diidentifikasi dengan frame number
+                    \item Setiap frame dapat menampung tepat satu page
+                \end{itemize}
+            \end{block}
+    \end{columns}
+    
+    \begin{alertblock}{Penting Diingat}
+        Ukuran page dan frame \textbf{harus sama} untuk memastikan proses mapping berjalan dengan benar!
+    \end{alertblock}
+\end{frame}
+
+\section{Implementasi Paging}
+
+\begin{frame}{Cara Kerja Paging}
+    \framesubtitle{Proses Translasi Alamat}
+    
+    \begin{block}{Mekanisme Dasar}
+        \begin{enumerate}
+            \item CPU menghasilkan alamat logis
+            \item Memory Management Unit (MMU) memecah alamat menjadi:
+                \begin{itemize}
+                    \item Page number (p): menunjukkan page yang diperlukan
+                    \item Page offset (d): lokasi dalam page tersebut
+                \end{itemize}
+            \item Page number digunakan sebagai index dalam page table
+            \item Page table memberikan frame number tempat page berada
+            \item Frame number dan page offset digabungkan untuk membentuk alamat fisik
+        \end{enumerate}
+    \end{block}
+    
+    \begin{alertblock}{Perhatian}
+        Proses translasi ini transparan bagi program yang berjalan!
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}{Model Paging Memori}
+    \framesubtitle{Hubungan Memori Logis dan Fisik}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \begin{block}{Memori Logis}
+                \begin{itemize}
+                    \item Dibagi menjadi page dengan ukuran tetap
+                    \item Alamat logis: (p, d)
+                    \item p = page number
+                    \item d = page offset
+                    \item Jumlah total page ditentukan oleh ukuran ruang alamat
+                \end{itemize}
+            \end{block}
+            
+        \column{0.48\textwidth}
+                \begin{block}{Memori Fisik}
+                \begin{itemize}
+                    \item Dibagi menjadi frame dengan ukuran sama
+                    \item Alamat fisik: $f \times$ ukuran frame + d
+                    \item f = frame number
+                    \item d = offset dalam frame
+                    \item Frame dapat dialokasikan secara noncontiguous
+                \end{itemize}
+            \end{block}
+    \end{columns}
+    
+    \begin{alertblock}{Page Table}
+        Struktur data yang memetakan page ke frame, biasanya disimpan dalam memori.
+        \begin{itemize}
+            \item Entry ke-i berisi frame number tempat page-i disimpan
+            \item Dapat menyimpan informasi tambahan (bit valid, bit proteksi, dll)
+        \end{itemize}
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}[fragile]{Contoh Perhitungan Paging}
+    \framesubtitle{Translasi Alamat Logis ke Alamat Fisik}
+    
+    \begin{block}{Spesifikasi Contoh}
+        Memori berukuran 32 byte dengan ukuran page 4 byte:
+        \begin{itemize}
+            \item Memori fisik: 32 byte = 8 frame (masing-masing 4 byte)
+            \item Memori logis: menggunakan page berukuran 4 byte
+        \end{itemize}
+    \end{block}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \begin{alertblock}{Struktur Alamat}
+                Alamat logis: 5 bit
+                \begin{itemize}
+                    \item 3 bit page number (0-7)
+                    \item 2 bit page offset (0-3)
+                \end{itemize}
+            \end{alertblock}
+            
+        \column{0.48\textwidth}
+            \begin{minted}[fontsize=\footnotesize, linenos=false]{text}
+Page Table:
+Page 0 → Frame 1
+Page 1 → Frame 4
+Page 2 → Frame 3
+Page 3 → Frame 7
+            \end{minted}
+    \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Contoh Perhitungan Paging (Lanjutan)}
+    \framesubtitle{Translasi Alamat Logis ke Alamat Fisik}
+    
+    \begin{block}{Contoh Translasi}
+        Alamat logis 13 (01101):
+        \begin{itemize}
+            \item Page number = 011 (3)
+            \item Page offset = 01 (1)
+            \item Page 3 disimpan di frame 7
+            \item Alamat fisik = (7 $\times$ 4) + 1 = 29
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Ilustrasi Alokasi Frame}
+    \framesubtitle{Keadaan Sebelum dan Sesudah Alokasi}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \begin{block}{Sebelum Alokasi}
+                \begin{tabular}{|c|c|}
+                    \hline
+                    \textbf{Frame} & \textbf{Status} \\ \hline
+                    0 & Terpakai \\ \hline
+                    1 & Kosong \\ \hline
+                    2 & Terpakai \\ \hline
+                    3 & Kosong \\ \hline
+                    4 & Kosong \\ \hline
+                    5 & Terpakai \\ \hline
+                    6 & Terpakai \\ \hline
+                    7 & Kosong \\ \hline
+                \end{tabular}
+                
+                \scriptsize Free frames: 1, 3, 4, 7
+            \end{block}
+            
+        \column{0.48\textwidth}
+            \begin{alertblock}{Setelah Alokasi 4 Page}
+                \begin{tabular}{|c|c|c|}
+                    \hline
+                    \textbf{Frame} & \textbf{Status} & \textbf{Page} \\ \hline
+                    0 & Terpakai & - \\ \hline
+                    1 & Terpakai & Page 0 \\ \hline
+                    2 & Terpakai & - \\ \hline
+                    3 & Terpakai & Page 2 \\ \hline
+                    4 & Terpakai & Page 1 \\ \hline
+                    5 & Terpakai & - \\ \hline
+                    6 & Terpakai & - \\ \hline
+                    7 & Terpakai & Page 3 \\ \hline
+                \end{tabular}
+                
+                \scriptsize Semua frame sudah terpakai
+            \end{alertblock}
+    \end{columns}
+    
+    \begin{block}{Catatan}
+        Alokasi frame tidak harus berurutan - paging mendukung alokasi memori noncontiguous.
+    \end{block}
+\end{frame}
+
+\section{Aktivitas Kelas}
+
+\begin{frame}{Latihan Paging}
+    \framesubtitle{Implementasi Translasi Alamat (1/2)}
+    
+    \begin{block}{Soal}
+        Diketahui sistem dengan spesifikasi:
+        \begin{itemize}
+            \item Ukuran memori fisik: 128 byte
+            \item Ukuran page: 16 byte
+            \item Page table: 
+            \begin{center}
+            \begin{tabular}{|c|c|}
+            \hline
+            \textbf{Page} & \textbf{Frame} \\
+            \hline
+            0 & 2 \\
+            \hline
+            1 & 5 \\
+            \hline
+            2 & 0 \\
+            \hline
+            3 & 6 \\
+            \hline
+            \end{tabular}
+            \end{center}      \end{itemize}
+    \end{block}
+    
+    \begin{alertblock}{Tugas Kelompok (5 menit)}
+        \begin{enumerate}
+            \item Tentukan berapa bit yang diperlukan untuk page number dan offset
+        \end{enumerate}
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}{Latihan Paging}
+    \framesubtitle{Implementasi Translasi Alamat (2/2)}
+    
+    \begin{alertblock}{Tugas Kelompok (lanjutan)}
+        \begin{enumerate}\setcounter{enumi}{1}
+            \item Terjemahkan alamat logis berikut ke alamat fisik:
+            \begin{itemize}
+                \item 22
+                \item 53
+            \end{itemize}
+            \item Apakah alamat logis 73 valid? Jelaskan!
+        \end{enumerate}
+    \end{alertblock}
+    
+    \begin{block}{Petunjuk}
+        Ingat rumus: Alamat fisik = (frame number $\times$ ukuran page) + offset
+    \end{block}
+\end{frame}
+
+\begin{frame}{Solusi Latihan Paging}
+    \framesubtitle{Analisis Kebutuhan Bit}
+    
+    \begin{block}{1. Kebutuhan Bit}
+        \begin{itemize}
+            \item Ukuran page = 16 byte → offset memerlukan 4 bit ($2^4 = 16$)
+            \item Memori fisik = 128 byte → total frame = 128 / 16 = 8 frame
+            \item 8 frame memerlukan 3 bit untuk representasi ($2^3 = 8$)
+            \item Page number memerlukan 3 bit (sesuai dengan jumlah page)
+            \item Alamat logis total: 7 bit (3 bit page number / 4 bit offset)      \end{itemize}
+    \end{block}
+    
+    \begin{alertblock}{Struktur Alamat Logis}
+        \begin{center}
+            \begin{tabular}{|c|c|}
+                \hline
+                \textbf{Page Number} & \textbf{Offset} \\
+                \hline
+                3 bit & 4 bit \\
+                \hline
+            \end{tabular}
+        \end{center}
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}{Solusi Latihan Paging}
+    \framesubtitle{Translasi Alamat (1/2)}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \begin{block}{Alamat logis 22}
+                \begin{itemize}
+                    \item Binary: 0010110
+                    \item Page number: 001 (1)
+                    \item Offset: 0110 (6)
+                    \item Page 1 → Frame 5
+                    \item Alamat fisik = (5 $\times$ 16) + 6 = 80 + 6 = 86
+                \end{itemize}
+            \end{block}
+            
+        \column{0.48\textwidth}
+            \begin{block}{Alamat logis 53}
+                \begin{itemize}
+                    \item Binary: 0110101
+                    \item Page number: 011 (3)
+                    \item Offset: 0101 (5)
+                    \item Page 3 → Frame 6
+                    \item Alamat fisik = (6 $\times$ 16) + 5 = 96 + 5 = 101
+                \end{itemize}
+            \end{block}
+    \end{columns}
+
+    \begin{block}{Perhitungan Alamat Fisik}
+        Alamat fisik dihitung menggunakan rumus berikut:
+        \[ \text{Alamat Fisik} = (\text{Frame Number} \times \text{Ukuran Page}) + \text{Offset} \]
+    \end{block}
+\end{frame}
+
+\begin{frame}{Solusi Latihan Paging}
+    \framesubtitle{Translasi Alamat (2/2)}
+    
+    \begin{block}{Langkah Perhitungan}
+        \begin{enumerate}
+            \item Ekstrak page number (p) dan offset (d) dari alamat logis
+            \item Temukan frame number (f) dari page table menggunakan p sebagai indeks
+            \item Hitung alamat fisik dengan rumus: f × ukuran page + d
+        \end{enumerate}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Solusi Latihan Paging}
+    \framesubtitle{Validasi Alamat}
+    
+    \begin{block}{3. Validasi Alamat Logis 73}
+        \begin{itemize}
+            \item Binary: 1001001
+            \item Page number: 100 (4)
+            \item Offset: 1001 (9)
+            \item Page table hanya mengandung Page 0-3
+            \item Page 4 tidak ada dalam page table
+        \end{itemize}
+    \end{block}
+    
+    \begin{alertblock}{Kesimpulan}
+        Alamat logis 73 \textbf{tidak valid}. Alasannya:
+        \begin{itemize}
+            \item Page number (4) melebihi rentang valid (0-3)
+            \item Sistem hanya menyediakan 4 page (Page 0-3)
+            \item Upaya mengakses Page 4 akan menyebabkan page fault
+        \end{itemize}
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}{Latihan Paging Tambahan}
+    \framesubtitle{Studi Kasus dengan Alamat Heksadesimal (1/2)}
+    
+    \begin{block}{Soal}
+        Diketahui sistem dengan spesifikasi:
+        \begin{itemize}
+            \item Ukuran memori fisik: 4 KB (4096 byte)
+            \item Ukuran page: 256 byte
+            \item Page table: 
+            \begin{center}
+            \begin{tabular}{|c|c|}
+            \hline
+            \textbf{Page} & \textbf{Frame} \\
+            \hline
+            0 & 5 \\
+            \hline
+            1 & 9 \\
+            \hline
+            2 & 14 \\
+            \hline
+            3 & 3 \\
+            \hline
+            4 & 11 \\
+            \hline
+            5 & 8 \\
+            \hline
+            \end{tabular}
+            \end{center}
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Latihan Paging Tambahan}
+    \framesubtitle{Studi Kasus dengan Alamat Heksadesimal (2/2)}
+    
+    \begin{alertblock}{Tugas Kelompok (10 menit)}
+        \begin{enumerate}
+            \item Tentukan berapa bit yang diperlukan untuk page number dan offset
+            \item Terjemahkan alamat logis berikut (dalam heksadesimal) ke alamat fisik:
+            \begin{itemize}
+                \item 0x2AF
+                \item 0x15D
+                \item 0x4C8
+            \end{itemize}
+            \item Apakah alamat logis 0x6A1 valid? Jelaskan!
+        \end{enumerate}
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}{Solusi Latihan Paging Tambahan}
+    \framesubtitle{Analisis Kebutuhan Bit dengan Heksadesimal}
+    
+    \begin{block}{1. Kebutuhan Bit}
+        \begin{itemize}
+            \item Ukuran page = 256 byte → offset memerlukan 8 bit ($2^8 = 256$)
+            \item Memori fisik = 4096 byte → total frame = 4096 / 256 = 16 frame
+            \item 16 frame memerlukan 4 bit untuk representasi ($2^4 = 16$)
+            \item Page number memerlukan 3 bit (page 0-5 → maksimal 6 page → butuh 3 bit)
+            \item Alamat logis total: 11 bit (3 bit page number + 8 bit offset)
+        \end{itemize}
+    \end{block}
+    
+    \begin{alertblock}{Struktur Alamat Logis}
+        \begin{center}
+            \begin{tabular}{|c|c|}
+                \hline
+                \textbf{Page Number} & \textbf{Offset} \\
+                \hline
+                3 bit & 8 bit \\
+                \hline
+            \end{tabular}
+        \end{center}
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}{Solusi Latihan Paging Tambahan}
+    \framesubtitle{Translasi Alamat Heksadesimal}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \begin{block}{Alamat logis 0x2AF}
+                \begin{itemize}
+                    \item Hex: 0x2AF = 687 (desimal) = 1010101111 (biner)
+                    \item Page number: 010 (2)
+                    \item Offset: 10101111 (0xAF = 175)
+                    \item Page 2 → Frame 14
+                    \item Alamat fisik = (14 $\times$ 256) + 175 = 3584 + 175 = 3759
+                \end{itemize}
+            \end{block}
+            
+        \column{0.48\textwidth}
+            \begin{block}{Alamat logis 0x15D}
+                \begin{itemize}
+                    \item Hex: 0x15D = 349 (desimal) = 0101011101 (biner)
+                    \item Page number: 001 (1)
+                    \item Offset: 01011101 (0x5D = 93)
+                    \item Page 1 → Frame 9
+                    \item Alamat fisik = (9 $\times$ 256) + 93 = 2304 + 93 = 2397
+                \end{itemize}
+            \end{block}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Solusi Latihan Paging Tambahan}
+    \framesubtitle{Translasi dan Validasi Alamat Hexadesimal}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \begin{block}{Alamat logis 0x4C8}
+                \begin{itemize}
+                    \item Hex: 0x4C8 = 1224 (desimal) = 10011001000 (biner)
+                    \item Page number: 100 (4)
+                    \item Offset: 11001000 (0xC8 = 200)
+                    \item Page 4 → Frame 11
+                    \item Alamat fisik = (11 $\times$ 256) + 200 = 2816 + 200 = 3016
+                \end{itemize}
+            \end{block}
+            
+        \column{0.48\textwidth}
+            \begin{alertblock}{Alamat logis 0x6A1 - Valid?}
+                \begin{itemize}
+                    \item Hex: 0x6A1 = 1697 (desimal) = 11010100001 (biner)
+                    \item Page number: 110 (6)
+                    \item Offset: 10100001 (0xA1 = 161)
+                    \item Page table hanya sampai Page 5
+                    \item Page 6 tidak terdefinisi dalam page table
+                    \item \textbf{Alamat tidak valid}, akan menyebabkan page fault
+                \end{itemize}
+            \end{alertblock}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Latihan Penerapan Paging}
+    \framesubtitle{Studi Kasus Memori Berskala Besar}
+    
+    \begin{block}{Skenario}
+        Anda sedang menganalisis sistem komputer dengan spesifikasi:
+        \begin{itemize}
+            \item Ruang alamat logis: 256 MB (per proses)
+            \item Memori fisik: 4 GB
+            \item Ukuran page: 4 KB
+        \end{itemize}
+    \end{block}
+    
+    \begin{alertblock}{Tugas Kelompok (15 menit)}
+        Analisis sistem ini dengan menjawab:
+        \begin{enumerate}
+            \item Berapa jumlah page dan frame dalam sistem ini?
+            \item Berapa bit yang diperlukan untuk page number, frame number, dan offset?
+        \end{enumerate}
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}{Latihan Penerapan Paging (Lanjutan)}
+    \framesubtitle{Studi Kasus Memori Berskala Besar}
+    
+    \begin{alertblock}{Tugas Kelompok (lanjutan)}
+        \begin{enumerate}\setcounter{enumi}{2}
+            \item Jika setiap entri page table memerlukan 4 byte, berapa total memori yang dibutuhkan untuk menyimpan page table satu proses?
+            \item Jika sistem berjalan dengan 50 proses sekaligus, apakah menyimpan semua page table di memori fisik merupakan pendekatan yang efisien? Jelaskan!
+        \end{enumerate}
+    \end{alertblock}
+    
+    \begin{block}{Petunjuk Perhitungan}
+        \begin{itemize}
+            \item 1 KB = $2^{10}$ byte, 1 MB = $2^{20}$ byte, 1 GB = $2^{30}$ byte
+            \item Jumlah page = Ukuran ruang alamat logis / Ukuran page
+            \item Jumlah frame = Ukuran memori fisik / Ukuran page
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Solusi Latihan Penerapan Paging}
+    \framesubtitle{Analisis Sistem Besar}
+    
+    \begin{block}{1. Jumlah Page dan Frame}
+        \begin{itemize}
+            \item Ukuran page = 4 KB = $2^{12}$ byte
+            \item Ruang alamat logis = 256 MB = $2^{28}$ byte
+            \item Jumlah page = $2^{28} \div 2^{12} = 2^{16} = 65,536$ page
+            \item Memori fisik = 4 GB = $2^{32}$ byte
+            \item Jumlah frame = $2^{32} \div 2^{12} = 2^{20} = 1,048,576$ frame
+        \end{itemize}
+    \end{block}
+    
+    \begin{alertblock}{2. Kebutuhan Bit}
+        \begin{itemize}
+            \item Page number memerlukan 16 bit (untuk $2^{16}$ page)
+            \item Frame number memerlukan 20 bit (untuk $2^{20}$ frame)
+            \item Offset memerlukan 12 bit (untuk 4 KB = $2^{12}$ byte)
+            \item Alamat logis: 28 bit (16 bit page number + 12 bit offset)
+            \item Alamat fisik: 32 bit (20 bit frame number + 12 bit offset)
+        \end{itemize}
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}{Solusi Latihan Penerapan Paging}
+    \framesubtitle{Analisis Kebutuhan Memori}
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \begin{block}{3. Ukuran Page Table}
+                \begin{itemize}
+                    \item Jumlah entri page table = 65,536 entri
+                    \item Ukuran per entri = 4 byte
+                    \item Total ukuran page table = $65,536 \times 4 = 262,144$ byte = 256 KB
+                \end{itemize}
+            \end{block}
+            
+        \column{0.48\textwidth}
+            \begin{alertblock}{4. Efisiensi Penyimpanan Page Table}
+                \begin{itemize}
+                    \item 50 proses membutuhkan $50 \times 256$ KB = 12,800 KB = 12.5 MB untuk page table
+                    \item 12.5 MB dari 4 GB (0.3\% dari memori fisik)
+                    \item Secara persentase, ini kecil, tapi masih signifikan
+                    \item \textbf{Tidak efisien} karena:
+                    \begin{itemize}
+                        \item Tidak semua page digunakan oleh proses
+                        \item Overhead terus meningkat dengan jumlah proses
+                    \end{itemize}
+                \end{itemize}
+            \end{alertblock}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Solusi Latihan Penerapan Paging}
+    \framesubtitle{Alternatif Desain dan Implikasi}
+    
+    \begin{block}{Alternatif Solusi}
+        \begin{itemize}
+            \item Implementasi page table bertingkat (multilevel page table)
+            \item Hanya menyimpan bagian page table yang aktif digunakan
+            \item Menggunakan Translation Lookaside Buffer (TLB) untuk mempercepat akses
+            \item Implementasi page table terbalik (inverted page table)
+        \end{itemize}
+    \end{block}
+    
+    \begin{alertblock}{Implikasi Penting}
+        \begin{itemize}
+            \item Meski persentase memori untuk page table kecil, penggunaan teknik yang efisien tetap penting
+            \item Dengan ruang alamat yang lebih besar (64-bit), masalah ini semakin signifikan
+            \item Solusi seperti multilevel paging dan TLB menjadi sangat penting dalam sistem modern
+            \item Trade-off: kompleksitas implementasi vs efisiensi memori
+        \end{itemize}
+    \end{alertblock}
+\end{frame}
+
+\section{Kesimpulan}
+
+\begin{frame}{Rangkuman Paging}
+    \framesubtitle{Poin-poin Penting}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+            \begin{block}{Konsep Utama}
+                \begin{itemize}
+                    \item Paging membagi memori logis menjadi page berukuran tetap
+                    \item Memori fisik dibagi menjadi frame dengan ukuran sama
+                    \item Page table menangani translasi alamat
+                    \item Mendukung alokasi memori noncontiguous
+                \end{itemize}
+            \end{block}
+            
+        \column{0.48\textwidth}
+            \begin{alertblock}{Tantangan Implementasi}
+                \begin{itemize}
+                    \item Ukuran page table bisa menjadi besar
+                    \item Overhead untuk translasi alamat
+                    \item Memerlukan hardware support (MMU)
+                    \item Perlu mekanisme proteksi dan sharing
+                \end{itemize}
+            \end{alertblock}
+    \end{columns}
+    
+    \begin{block}{Pengembangan}
+        Teknik paging adalah fundamental untuk implementasi memori virtual, yang akan kita pelajari selanjutnya.
+    \end{block}
+\end{frame}
+
+\backmatter % generate the final slide
+\end{document}
