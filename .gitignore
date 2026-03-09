@@ -10,3 +10,4 @@ tmp/**
 node_modules/
 .sass-cache
 3_Tugas/quiz_prauts.json
+3_Tugas/quiz*
