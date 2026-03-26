@@ -1,0 +1,55 @@
+\frametitle{Solusi Latihan 3}
+    \framesubtitle{Perhitungan sistem besar}
+    \tiny
+
+    \begin{columns}[T]
+        \column{0.32\textwidth}
+        \begin{block}{1. Jumlah Page}
+            \begin{lstlisting}[basicstyle=\ttfamily\tiny,breaklines=true]
+256 MB / 4 KB
+= 2^28 / 2^12
+= 2^16
+= 65,536
+            \end{lstlisting}
+        \end{block}
+
+        \begin{block}{2. Jumlah Frame}
+            \begin{lstlisting}[basicstyle=\ttfamily\tiny,breaklines=true]
+4 GB / 4 KB
+= 2^32 / 2^12
+= 2^20
+= 1,048,576
+            \end{lstlisting}
+        \end{block}
+
+        \column{0.32\textwidth}
+        \begin{block}{3. Bit untuk Alamat}
+            \begin{lstlisting}[basicstyle=\ttfamily\tiny,breaklines=true]
+Offset: 12 bit
+
+Page num:
+16 bit
+
+Frame num:
+20 bit
+
+Logis: 28 bit
+Fisik: 32 bit
+            \end{lstlisting}
+        \end{block}
+
+        \column{0.32\textwidth}
+        \begin{block}{4 \& 5. Page Table}
+            \begin{lstlisting}[basicstyle=\ttfamily\tiny,breaklines=true]
+Per proses:
+65,536 * 4 byte
+= 262,144 byte
+= 256 KB
+
+100 proses:
+100 * 256 KB
+= 25,600 KB
+= 25 MB
+            \end{lstlisting}
+        \end{block}
+    \end{columns}
