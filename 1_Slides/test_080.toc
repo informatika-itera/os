@@ -1,0 +1,2 @@
+\beamer@sectionintoc {1}{Pembuka \& Motivasi}{4}{0}{1}
+\beamer@sectionintoc {2}{Thread Abstraction}{9}{0}{2}

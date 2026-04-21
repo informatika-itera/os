@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hands-on Code – Week 10: Concurrency</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Highlight.js for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/c.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --border: rgba(255,255,255,0.07);
+            --accent: #38bdf8;
+            --green: #10b981;
+            --red: #ef4444;
+            --orange: #f97316;
+            --purple: #a78bfa;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            background-image:
+                radial-gradient(at 0% 0%,   rgba(37,99,235,.15) 0, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(56,189,248,.12) 0, transparent 50%);
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 4rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.875rem;
+            margin-bottom: 2rem;
+            transition: color .2s;
+        }
+        .back-link:hover { color: var(--accent); }
+
+        header { margin-bottom: 2.5rem; }
+
+        .week-badge {
+            display: inline-block;
+            background: rgba(167,139,250,.15);
+            color: var(--purple);
+            border: 1px solid rgba(167,139,250,.3);
+            padding: .25rem .75rem;
+            border-radius: 9999px;
+            font-size: .8rem;
+            font-weight: 600;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+            margin-bottom: .75rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 0 .5rem;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        /* Compile instructions box */
+        .compile-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: .75rem;
+            padding: 1rem 1.25rem;
+            margin-bottom: 2.5rem;
+            font-size: .9rem;
+        }
+        .compile-box h3 {
+            margin: 0 0 .5rem;
+            color: var(--accent);
+            font-size: .9rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+        .compile-box code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .85rem;
+            background: rgba(0,0,0,.3);
+            padding: .15rem .4rem;
+            border-radius: 4px;
+        }
+        .compile-box p { margin: .25rem 0; color: var(--muted); }
+
+        /* Code card */
+        .code-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .code-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1.25rem 1.5rem .75rem;
+            flex-wrap: wrap;
+        }
+
+        .code-card-meta { flex: 1; }
+
+        .file-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .78rem;
+            font-weight: 600;
+            padding: .2rem .6rem;
+            border-radius: 6px;
+            margin-bottom: .4rem;
+            display: inline-block;
+        }
+        .badge-blue   { background: rgba(37,99,235,.2);  color: #93c5fd; border: 1px solid rgba(37,99,235,.3); }
+        .badge-red    { background: rgba(239,68,68,.2);  color: #fca5a5; border: 1px solid rgba(239,68,68,.3); }
+        .badge-green  { background: rgba(16,185,129,.2); color: #6ee7b7; border: 1px solid rgba(16,185,129,.3); }
+        .badge-orange { background: rgba(249,115,22,.2); color: #fdba74; border: 1px solid rgba(249,115,22,.3); }
+
+        .code-card-header h2 {
+            margin: .25rem 0 .3rem;
+            font-size: 1.15rem;
+        }
+
+        .code-card-header p {
+            margin: 0;
+            color: var(--muted);
+            font-size: .9rem;
+            line-height: 1.5;
+        }
+
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .4rem;
+            padding: 0 1.5rem .75rem;
+        }
+
+        .tag {
+            font-size: .75rem;
+            padding: .15rem .55rem;
+            border-radius: 9999px;
+            background: rgba(255,255,255,.05);
+            color: var(--muted);
+            border: 1px solid var(--border);
+        }
+
+        .concept-note {
+            margin: 0 1.5rem .75rem;
+            background: rgba(255,255,255,.03);
+            border-left: 3px solid;
+            border-radius: 0 .5rem .5rem 0;
+            padding: .6rem .9rem;
+            font-size: .875rem;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+        .note-info   { border-color: var(--accent); }
+        .note-warn   { border-color: var(--red); }
+        .note-ok     { border-color: var(--green); }
+        .note-caution{ border-color: var(--orange); }
+
+        pre {
+            margin: 0;
+            border-radius: 0;
+        }
+
+        pre code.hljs {
+            padding: 1.25rem 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .82rem;
+            line-height: 1.65;
+            background: #0d1117 !important;
+        }
+
+        .copy-btn {
+            background: rgba(255,255,255,.06);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            border-radius: .5rem;
+            padding: .35rem .75rem;
+            font-size: .78rem;
+            cursor: pointer;
+            transition: all .2s;
+            font-family: 'Inter', sans-serif;
+            white-space: nowrap;
+        }
+        .copy-btn:hover {
+            background: rgba(56,189,248,.1);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        footer {
+            margin-top: 3rem;
+            text-align: center;
+            color: var(--muted);
+            font-size: .85rem;
+            opacity: .6;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <a href="../index.html" class="back-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        Kembali ke Homepage
+    </a>
+
+    <header>
+        <div class="week-badge">Week 10 · Hands-on Code</div>
+        <h1>Concurrency: An Introduction</h1>
+        <p class="subtitle">Thread, Race Condition &amp; Critical Section — kode pendukung slide kuliah</p>
+    </header>
+
+    <div class="compile-box">
+        <h3>Cara Compile &amp; Jalankan</h3>
+        <p>Masuk ke folder ini, lalu jalankan <code>make</code> untuk compile semua sekaligus:</p>
+        <p><code>cd 4_handson_code/week10 &amp;&amp; make</code></p>
+        <p>Atau compile satu file: <code>gcc -Wall -pthread -O0 -o nama nama.c</code></p>
+    </div>
+
+    <!-- ── 01 Thread Basic ── -->
+    <div class="code-card">
+        <div class="code-card-header">
+            <div class="code-card-meta">
+                <span class="file-badge badge-blue">01_thread_basic.c</span>
+                <h2>Thread Abstraction: Membuat &amp; Join Thread</h2>
+                <p>Contoh paling sederhana menggunakan Pthread API.
+                   Dua thread berjalan paralel, lalu main menunggu keduanya selesai.</p>
+            </div>
+            <button class="copy-btn" onclick="copyCode(this)">Salin kode</button>
+        </div>
+
+        <div class="tag-list">
+            <span class="tag">pthread_create</span>
+            <span class="tag">pthread_join</span>
+            <span class="tag">non-determinism</span>
+        </div>
+
+        <div class="concept-note note-info">
+            <strong>Perhatikan:</strong> urutan baris <em>"Thread A berjalan"</em> dan
+            <em>"Thread B berjalan"</em> bisa <strong>berbeda setiap kali dijalankan</strong>
+            — inilah yang disebut <em>non-determinism</em> pada program concurrent.
+        </div>
+
+        <pre><code class="language-c">/*
+ * 01_thread_basic.c – Thread Abstraction
+ * Compile: gcc -Wall -pthread -o 01_thread_basic 01_thread_basic.c
+ */
+#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+
+void *my_thread(void *arg) {
+    char *name = (char *) arg;
+    printf("Thread %s berjalan\n", name);
+    return NULL;
+}
+
+int main(void) {
+    pthread_t t1, t2;
+
+    pthread_create(&amp;t1, NULL, my_thread, "A");
+    pthread_create(&amp;t2, NULL, my_thread, "B");
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+
+    printf("Main selesai\n");
+    return 0;
+}</code></pre>
+    </div>
+
+    <!-- ── 02 Race Condition ── -->
+    <div class="code-card">
+        <div class="code-card-header">
+            <div class="code-card-meta">
+                <span class="file-badge badge-red">02_race_condition.c</span>
+                <h2>Race Condition: counter++ yang Tidak Aman</h2>
+                <p>Dua thread masing-masing melakukan 1.000.000 increment pada satu variabel
+                   shared tanpa proteksi — hasilnya tidak selalu 2.000.000.</p>
+            </div>
+            <button class="copy-btn" onclick="copyCode(this)">Salin kode</button>
+        </div>
+
+        <div class="tag-list">
+            <span class="tag">shared variable</span>
+            <span class="tag">LOAD–ADD–STORE</span>
+            <span class="tag">lost update</span>
+            <span class="tag">interleaving</span>
+        </div>
+
+        <div class="concept-note note-warn">
+            <strong>Mengapa &lt; 2.000.000?</strong> &nbsp;<code>counter++</code> terdiri dari tiga
+            instruksi mesin: <strong>LOAD</strong> (baca dari memori),
+            <strong>ADD</strong> (tambah di register), <strong>STORE</strong> (tulis balik).
+            Jika T1 di-preempt setelah LOAD, T2 menulis nilai baru, lalu T1 menimpa hasil T2
+            → satu update hilang (<em>lost update</em>).
+        </div>
+
+        <pre><code class="language-c">/*
+ * 02_race_condition.c – Race Condition
+ * Compile: gcc -Wall -pthread -O0 -o 02_race_condition 02_race_condition.c
+ * Jalankan beberapa kali dan amati nilainya berubah.
+ */
+#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+
+#define LOOP 1000000
+
+int counter = 0; /* shared variable */
+
+void *increment(void *arg) {
+    for (int i = 0; i &lt; LOOP; i++) {
+        counter++; /* LOAD, ADD, STORE — TIDAK atomik! */
+    }
+    return NULL;
+}
+
+int main(void) {
+    pthread_t t1, t2;
+
+    pthread_create(&amp;t1, NULL, increment, NULL);
+    pthread_create(&amp;t2, NULL, increment, NULL);
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+
+    printf("Ekspektasi : %d\n", LOOP * 2);
+    printf("Hasil nyata: %d\n", counter);
+
+    if (counter == LOOP * 2)
+        printf("STATUS: Kebetulan benar (coba jalankan lagi)\n");
+    else
+        printf("STATUS: Race condition terdeteksi! Kehilangan %d update.\n",
+               LOOP * 2 - counter);
+
+    return 0;
+}</code></pre>
+    </div>
+
+    <!-- ── 03 Mutex Fix ── -->
+    <div class="code-card">
+        <div class="code-card-header">
+            <div class="code-card-meta">
+                <span class="file-badge badge-green">03_mutex_fix.c</span>
+                <h2>Critical Section: Perbaikan dengan Mutex</h2>
+                <p>Program yang sama, tapi counter++ dilindungi dengan
+                   <code>pthread_mutex_lock</code> / <code>pthread_mutex_unlock</code>.
+                   Hasilnya selalu tepat 2.000.000.</p>
+            </div>
+            <button class="copy-btn" onclick="copyCode(this)">Salin kode</button>
+        </div>
+
+        <div class="tag-list">
+            <span class="tag">mutex</span>
+            <span class="tag">critical section</span>
+            <span class="tag">mutual exclusion</span>
+            <span class="tag">pthread_mutex_lock</span>
+        </div>
+
+        <div class="concept-note note-ok">
+            <strong>Prinsipnya:</strong> mutex memastikan hanya satu thread yang mengeksekusi
+            <code>counter++</code> pada satu waktu → syarat <em>mutual exclusion</em> terpenuhi.
+            Ini adalah <em>teaser</em> materi minggu berikutnya (lock &amp; synchronization primitives).
+        </div>
+
+        <pre><code class="language-c">/*
+ * 03_mutex_fix.c – Mutex sebagai solusi Critical Section
+ * Compile: gcc -Wall -pthread -O0 -o 03_mutex_fix 03_mutex_fix.c
+ */
+#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+
+#define LOOP 1000000
+
+int counter = 0;
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+void *increment(void *arg) {
+    for (int i = 0; i &lt; LOOP; i++) {
+        pthread_mutex_lock(&amp;lock);   /* masuk critical section */
+        counter++;                   /* ← protected! */
+        pthread_mutex_unlock(&amp;lock); /* keluar critical section */
+    }
+    return NULL;
+}
+
+int main(void) {
+    pthread_t t1, t2;
+
+    pthread_create(&amp;t1, NULL, increment, NULL);
+    pthread_create(&amp;t2, NULL, increment, NULL);
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+
+    pthread_mutex_destroy(&amp;lock);
+
+    printf("Ekspektasi : %d\n", LOOP * 2);
+    printf("Hasil nyata: %d\n", counter);
+
+    if (counter == LOOP * 2)
+        printf("STATUS: Benar! Mutex melindungi critical section.\n");
+
+    return 0;
+}</code></pre>
+    </div>
+
+    <!-- ── 04 Naive Flag ── -->
+    <div class="code-card">
+        <div class="code-card-header">
+            <div class="code-card-meta">
+                <span class="file-badge badge-orange">04_naive_flag.c</span>
+                <h2>Percobaan Naif: Flag Sederhana (Bisa Hang!)</h2>
+                <p>Upaya manual melindungi critical section dengan dua variabel flag.
+                   Pendekatan ini gagal memenuhi syarat <strong>Progress</strong>
+                   dan bisa menyebabkan deadlock.</p>
+            </div>
+            <button class="copy-btn" onclick="copyCode(this)">Salin kode</button>
+        </div>
+
+        <div class="tag-list">
+            <span class="tag">naive solution</span>
+            <span class="tag">progress violation</span>
+            <span class="tag">deadlock risk</span>
+            <span class="tag">busy-waiting</span>
+        </div>
+
+        <div class="concept-note note-caution">
+            <strong>⚠ Program ini bisa HANG.</strong> Jika Thread 0 dan Thread 1 sama-sama
+            men-set flag menjadi 1 hampir bersamaan, keduanya masuk ke loop
+            <code>while</code> dan saling menunggu selamanya. Tekan <strong>Ctrl+C</strong>
+            untuk keluar. Ini membuktikan bahwa solusi flag naif tidak memenuhi syarat
+            <em>Progress</em>.
+        </div>
+
+        <pre><code class="language-c">/*
+ * 04_naive_flag.c – Solusi Flag Naif (bisa hang!)
+ * Compile: gcc -Wall -pthread -O0 -o 04_naive_flag 04_naive_flag.c
+ * PERINGATAN: program ini bisa hang. Tekan Ctrl+C untuk keluar.
+ */
+#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+
+#define LOOP 500000
+
+int counter = 0;
+volatile int flag[2] = {0, 0};
+
+void *thread0(void *arg) {
+    for (int i = 0; i &lt; LOOP; i++) {
+        flag[0] = 1;        /* nyatakan niat masuk */
+        while (flag[1]);    /* tunggu kalau thread1 di dalam */
+        counter++;
+        flag[0] = 0;
+    }
+    return NULL;
+}
+
+void *thread1(void *arg) {
+    for (int i = 0; i &lt; LOOP; i++) {
+        flag[1] = 1;
+        while (flag[0]);    /* masalah: jika keduanya set flag
+                               hampir bersamaan → saling tunggu */
+        counter++;
+        flag[1] = 0;
+    }
+    return NULL;
+}
+
+int main(void) {
+    pthread_t t0, t1;
+
+    printf("Memulai... (mungkin hang, tekan Ctrl+C jika perlu)\n");
+
+    pthread_create(&amp;t0, NULL, thread0, NULL);
+    pthread_create(&amp;t1, NULL, thread1, NULL);
+
+    pthread_join(t0, NULL);
+    pthread_join(t1, NULL);
+
+    printf("Ekspektasi : %d\n", LOOP * 2);
+    printf("Hasil nyata: %d\n", counter);
+
+    return 0;
+}</code></pre>
+    </div>
+
+    <footer>&copy; 2026 lectura.id/course/os — Institut Teknologi Sumatera</footer>
+</div>
+
+<script>
+    hljs.highlightAll();
+
+    function copyCode(btn) {
+        const pre = btn.closest('.code-card').querySelector('pre code');
+        const text = pre.innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            btn.textContent = 'Tersalin!';
+            setTimeout(() => { btn.textContent = 'Salin kode'; }, 2000);
+        });
+    }
+</script>
+</body>
+</html>

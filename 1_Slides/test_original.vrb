@@ -1,0 +1,47 @@
+\frametitle{Pthread API: Membuat dan Join Thread}
+    \framesubtitle{Contoh sederhana dengan pthread}
+    \small
+
+    \begin{columns}[T]
+        \column{0.54\textwidth}
+        \begin{lstlisting}[basicstyle=\ttfamily\scriptsize, breaklines=true]
+#include <stdio.h>
+#include <pthread.h>
+
+void *my_thread(void *arg) {
+    char *name = (char *) arg;
+    printf("Thread %s berjalan\n", name);
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2;
+    pthread_create(&t1, NULL, my_thread, "A");
+    pthread_create(&t2, NULL, my_thread, "B");
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    printf("Main selesai\n");
+    return 0;
+}
+        \end{lstlisting}
+
+        \column{0.42\textwidth}
+        \begin{block}{Penjelasan Kode}
+            \begin{itemize}
+                \item \texttt{pthread\_create()}: buat thread baru
+                \item \texttt{pthread\_join()}: tunggu thread selesai
+            \end{itemize}
+        \end{block}
+
+        \vspace{0.2cm}
+        \begin{alertblock}{Pertanyaan Penting!}
+            Apakah output \textbf{selalu}:
+            \texttt{Thread A}
+            \texttt{Thread B}
+            \texttt{Main selesai}
+            ?
+        \end{alertblock}
+
+        \vspace{0.1cm}
+        \small \textit{Jawab:} \textbf{Tidak!} Urutannya bisa berubah. Ini disebut \tem{non-determinism}.
+    \end{columns}
