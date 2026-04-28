@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hands-on Code – Week 11: Locks &amp; Mutex</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/c.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --border: rgba(255,255,255,0.07);
+            --accent: #38bdf8;
+            --green: #10b981;
+            --red: #ef4444;
+            --orange: #f97316;
+            --purple: #a78bfa;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            background-image:
+                radial-gradient(at 0% 0%,   rgba(37,99,235,.15) 0, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(56,189,248,.12) 0, transparent 50%);
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 4rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.875rem;
+            margin-bottom: 2rem;
+            transition: color .2s;
+        }
+        .back-link:hover { color: var(--accent); }
+
+        header { margin-bottom: 2.5rem; }
+
+        .week-badge {
+            display: inline-block;
+            background: rgba(167,139,250,.15);
+            color: var(--purple);
+            border: 1px solid rgba(167,139,250,.3);
+            padding: .25rem .75rem;
+            border-radius: 9999px;
+            font-size: .8rem;
+            font-weight: 600;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+            margin-bottom: .75rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 0 .5rem;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        .compile-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: .75rem;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.25rem;
+            font-size: .9rem;
+        }
+        .compile-box h3 {
+            margin: 0 0 .5rem;
+            color: var(--accent);
+            font-size: .9rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+        .compile-box code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .85rem;
+            background: rgba(0,0,0,.3);
+            padding: .15rem .4rem;
+            border-radius: 4px;
+        }
+        .compile-box p { margin: .25rem 0; color: var(--muted); }
+
+        /* Experiment table */
+        .experiment-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--orange);
+            border-radius: .75rem;
+            padding: 1rem 1.25rem;
+            margin-bottom: 2.5rem;
+            font-size: .9rem;
+        }
+        .experiment-box h3 {
+            margin: 0 0 .75rem;
+            color: var(--orange);
+            font-size: .9rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+        .experiment-box table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .875rem;
+        }
+        .experiment-box th {
+            text-align: left;
+            color: var(--muted);
+            font-weight: 600;
+            padding: .35rem .75rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .experiment-box td {
+            padding: .4rem .75rem;
+            border-bottom: 1px solid rgba(255,255,255,.04);
+            color: var(--text);
+            vertical-align: top;
+        }
+        .experiment-box td code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .82rem;
+            background: rgba(0,0,0,.3);
+            padding: .1rem .35rem;
+            border-radius: 4px;
+        }
+
+        .code-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .code-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1.25rem 1.5rem .75rem;
+            flex-wrap: wrap;
+        }
+
+        .code-card-meta { flex: 1; }
+
+        .file-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .78rem;
+            font-weight: 600;
+            padding: .2rem .6rem;
+            border-radius: 6px;
+            margin-bottom: .4rem;
+            display: inline-block;
+        }
+        .badge-blue   { background: rgba(37,99,235,.2);  color: #93c5fd; border: 1px solid rgba(37,99,235,.3); }
+        .badge-red    { background: rgba(239,68,68,.2);  color: #fca5a5; border: 1px solid rgba(239,68,68,.3); }
+        .badge-green  { background: rgba(16,185,129,.2); color: #6ee7b7; border: 1px solid rgba(16,185,129,.3); }
+        .badge-orange { background: rgba(249,115,22,.2); color: #fdba74; border: 1px solid rgba(249,115,22,.3); }
+
+        .code-card-header h2 {
+            margin: .25rem 0 .3rem;
+            font-size: 1.15rem;
+        }
+
+        .code-card-header p {
+            margin: 0;
+            color: var(--muted);
+            font-size: .9rem;
+            line-height: 1.5;
+        }
+
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .4rem;
+            padding: 0 1.5rem .75rem;
+        }
+
+        .tag {
+            font-size: .75rem;
+            padding: .15rem .55rem;
+            border-radius: 9999px;
+            background: rgba(255,255,255,.05);
+            color: var(--muted);
+            border: 1px solid var(--border);
+        }
+
+        .concept-note {
+            margin: 0 1.5rem .75rem;
+            background: rgba(255,255,255,.03);
+            border-left: 3px solid;
+            border-radius: 0 .5rem .5rem 0;
+            padding: .6rem .9rem;
+            font-size: .875rem;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+        .note-info   { border-color: var(--accent); }
+        .note-warn   { border-color: var(--red); }
+        .note-ok     { border-color: var(--green); }
+        .note-caution{ border-color: var(--orange); }
+
+        .observe-list {
+            margin: 0 1.5rem .75rem;
+            padding: .75rem 1rem;
+            background: rgba(16,185,129,.06);
+            border: 1px solid rgba(16,185,129,.15);
+            border-radius: .5rem;
+            font-size: .875rem;
+        }
+        .observe-list strong {
+            display: block;
+            color: var(--green);
+            margin-bottom: .4rem;
+            font-size: .8rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+        .observe-list ol {
+            margin: 0;
+            padding-left: 1.2rem;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+        .observe-list ol li code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .82rem;
+            background: rgba(0,0,0,.3);
+            padding: .1rem .3rem;
+            border-radius: 3px;
+            color: var(--text);
+        }
+
+        pre { margin: 0; border-radius: 0; }
+
+        pre code.hljs {
+            padding: 1.25rem 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .82rem;
+            line-height: 1.65;
+            background: #0d1117 !important;
+        }
+
+        .copy-btn {
+            background: rgba(255,255,255,.06);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            border-radius: .5rem;
+            padding: .35rem .75rem;
+            font-size: .78rem;
+            cursor: pointer;
+            transition: all .2s;
+            font-family: 'Inter', sans-serif;
+            white-space: nowrap;
+        }
+        .copy-btn:hover {
+            background: rgba(56,189,248,.1);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        footer {
+            margin-top: 3rem;
+            text-align: center;
+            color: var(--muted);
+            font-size: .85rem;
+            opacity: .6;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <a href="../../index.html" class="back-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        Kembali ke Homepage
+    </a>
+
+    <header>
+        <div class="week-badge">Week 11 · Hands-on Code</div>
+        <h1>Locks &amp; Mutex</h1>
+        <p class="subtitle">Race condition, mutex, dan spinlock — kode pendukung slide kuliah</p>
+    </header>
+
+    <div class="compile-box">
+        <h3>Cara Compile &amp; Jalankan</h3>
+        <p>Masuk ke folder ini, lalu jalankan <code>make</code> untuk compile semua sekaligus:</p>
+        <p><code>cd 4_handson_code/week11 &amp;&amp; make</code></p>
+        <p>Atau compile satu file: <code>gcc -Wall -pthread -O0 -o nama namafile.c</code></p>
+        <p>Bandingkan kecepatan mutex vs spinlock: <code>time ./mutex &amp;&amp; time ./spin</code></p>
+    </div>
+
+    <div class="experiment-box">
+        <h3>Urutan Eksperimen yang Disarankan</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Langkah</th>
+                    <th>Perintah</th>
+                    <th>Yang dicari</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1. Lihat race</td>
+                    <td><code>./race</code> × 3</td>
+                    <td>Hasil berubah-ubah, selalu &lt; 2.000.000</td>
+                </tr>
+                <tr>
+                    <td>2. Perbaiki dengan mutex</td>
+                    <td><code>./mutex</code> × 3</td>
+                    <td>Selalu tepat 2.000.000</td>
+                </tr>
+                <tr>
+                    <td>3. Coba spinlock</td>
+                    <td><code>./spin</code> × 3</td>
+                    <td>Juga selalu 2.000.000, tapi cara kerjanya berbeda</td>
+                </tr>
+                <tr>
+                    <td>4. Bandingkan waktu</td>
+                    <td><code>time ./mutex</code> &amp; <code>time ./spin</code></td>
+                    <td>Mana lebih cepat? Lihat <em>real</em> time</td>
+                </tr>
+                <tr>
+                    <td>5. Pantau CPU</td>
+                    <td><code>top</code> saat <code>./spin</code> berjalan</td>
+                    <td>CPU usage mendekati 100% — spinlock sibukkan CPU</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ── 01 Race ── -->
+    <div class="code-card">
+        <div class="code-card-header">
+            <div class="code-card-meta">
+                <span class="file-badge badge-red">01_race.c</span>
+                <h2>Race Condition: counter++ Tanpa Proteksi</h2>
+                <p>Dua thread masing-masing increment 1.000.000 kali tanpa lock.
+                   Hasilnya tidak bisa diprediksi dan hampir selalu kurang dari 2.000.000.</p>
+            </div>
+            <button class="copy-btn" onclick="copyCode(this)">Salin kode</button>
+        </div>
+
+        <div class="tag-list">
+            <span class="tag">race condition</span>
+            <span class="tag">LOAD–ADD–STORE</span>
+            <span class="tag">lost update</span>
+            <span class="tag">non-determinism</span>
+        </div>
+
+        <div class="concept-note note-warn">
+            <strong>Kenapa hasilnya kurang dari 2.000.000?</strong>
+            <code>counter++</code> bukan satu instruksi — CPU melakukan tiga langkah:
+            <strong>LOAD</strong> (baca dari memori), <strong>ADD</strong> (tambah di register),
+            <strong>STORE</strong> (tulis balik). Jika T1 di-preempt setelah LOAD dan sebelum STORE,
+            T2 membaca nilai lama yang sama — satu update hilang (<em>lost update</em>).
+        </div>
+
+        <div class="observe-list">
+            <strong>Yang perlu diobservasi</strong>
+            <ol>
+                <li>Jalankan <code>./race</code> tiga kali berturut-turut — apakah hasilnya sama setiap kali?</li>
+                <li>Berapa selisih dari 2.000.000? Apakah selisihnya konsisten?</li>
+                <li>Coba jalankan dengan <code>-O2</code> (optimasi compiler) — apakah hasilnya berbeda?</li>
+            </ol>
+        </div>
+
+        <pre><code class="language-c">/*
+ * 01_race.c – Race Condition pada counter++
+ * Compile: gcc -Wall -pthread -O0 -o race 01_race.c
+ * Jalankan beberapa kali dan amati: hasilnya tidak selalu 2.000.000.
+ */
+#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+
+#define LOOP 1000000
+
+int counter = 0; /* shared, tidak dilindungi */
+
+void *increment(void *arg) {
+    for (int i = 0; i &lt; LOOP; i++) {
+        counter++; /* LOAD, ADD, STORE — tidak atomik! */
+    }
+    return NULL;
+}
+
+int main(void) {
+    pthread_t t1, t2;
+
+    pthread_create(&amp;t1, NULL, increment, NULL);
+    pthread_create(&amp;t2, NULL, increment, NULL);
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+
+    printf("Ekspektasi : %d\n", LOOP * 2);
+    printf("Hasil nyata: %d\n", counter);
+
+    if (counter == LOOP * 2)
+        printf("STATUS: Kebetulan benar — coba jalankan lagi.\n");
+    else
+        printf("STATUS: Race condition! Kehilangan %d update.\n",
+               LOOP * 2 - counter);
+
+    return 0;
+}</code></pre>
+    </div>
+
+    <!-- ── 02 Mutex ── -->
+    <div class="code-card">
+        <div class="code-card-header">
+            <div class="code-card-meta">
+                <span class="file-badge badge-green">02_mutex.c</span>
+                <h2>Solusi Mutex: pthread_mutex_lock / unlock</h2>
+                <p>Program yang sama, tapi <code>counter++</code> dilindungi mutex.
+                   Hasilnya selalu tepat 2.000.000 — mutex menjamin mutual exclusion.</p>
+            </div>
+            <button class="copy-btn" onclick="copyCode(this)">Salin kode</button>
+        </div>
+
+        <div class="tag-list">
+            <span class="tag">mutex</span>
+            <span class="tag">pthread_mutex_lock</span>
+            <span class="tag">critical section</span>
+            <span class="tag">mutual exclusion</span>
+            <span class="tag">blocking wait</span>
+        </div>
+
+        <div class="concept-note note-ok">
+            <strong>Cara kerja mutex:</strong> saat <code>pthread_mutex_lock</code> dipanggil dan
+            lock sudah diambil thread lain, OS <strong>menidurkan</strong> thread pemanggil —
+            thread tidak memakan CPU selama menunggu. Saat lock dilepas, OS membangunkan
+            thread berikutnya dari antrian.
+        </div>
+
+        <div class="observe-list">
+            <strong>Yang perlu diobservasi</strong>
+            <ol>
+                <li>Jalankan <code>./mutex</code> tiga kali — apakah hasilnya selalu 2.000.000?</li>
+                <li>Bandingkan waktu: <code>time ./race</code> vs <code>time ./mutex</code> — mana lebih cepat?</li>
+                <li>Coba pindahkan <code>lock</code>/<code>unlock</code> ke luar loop — apa yang berubah dari sisi kebenaran dan kecepatan?</li>
+            </ol>
+        </div>
+
+        <pre><code class="language-c">/*
+ * 02_mutex.c – Perbaikan dengan pthread_mutex
+ * Compile: gcc -Wall -pthread -O0 -o mutex 02_mutex.c
+ * Hasilnya harus selalu tepat 2.000.000.
+ */
+#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+
+#define LOOP 1000000
+
+int counter = 0;
+pthread_mutex_t lock; /* variabel mutex */
+
+void *increment(void *arg) {
+    for (int i = 0; i &lt; LOOP; i++) {
+        pthread_mutex_lock(&amp;lock);   /* kunci sebelum masuk */
+        counter++;                   /* critical section — aman */
+        pthread_mutex_unlock(&amp;lock); /* buka setelah selesai */
+    }
+    return NULL;
+}
+
+int main(void) {
+    pthread_t t1, t2;
+
+    pthread_mutex_init(&amp;lock, NULL);
+
+    pthread_create(&amp;t1, NULL, increment, NULL);
+    pthread_create(&amp;t2, NULL, increment, NULL);
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+
+    pthread_mutex_destroy(&amp;lock);
+
+    printf("Ekspektasi : %d\n", LOOP * 2);
+    printf("Hasil nyata: %d\n", counter);
+
+    if (counter == LOOP * 2)
+        printf("STATUS: Benar! Mutex melindungi critical section.\n");
+    else
+        printf("STATUS: Salah — ada bug di kode ini.\n");
+
+    return 0;
+}</code></pre>
+    </div>
+
+    <!-- ── 03 Spinlock ── -->
+    <div class="code-card">
+        <div class="code-card-header">
+            <div class="code-card-meta">
+                <span class="file-badge badge-orange">03_spinlock.c</span>
+                <h2>Spinlock dengan Instruksi Atomik Test-and-Set</h2>
+                <p>Lock dibangun manual menggunakan <code>__sync_lock_test_and_set</code> —
+                   versi C dari instruksi hardware Test-and-Set. Hasilnya tetap benar,
+                   tapi thread yang menunggu <strong>terus memakan CPU</strong>.</p>
+            </div>
+            <button class="copy-btn" onclick="copyCode(this)">Salin kode</button>
+        </div>
+
+        <div class="tag-list">
+            <span class="tag">spinlock</span>
+            <span class="tag">test-and-set</span>
+            <span class="tag">atomic instruction</span>
+            <span class="tag">busy-wait</span>
+            <span class="tag">__sync_lock_test_and_set</span>
+        </div>
+
+        <div class="concept-note note-info">
+            <strong>Cara kerja Test-and-Set:</strong>
+            <code>__sync_lock_test_and_set(&amp;flag, 1)</code> membaca nilai <code>flag</code> lama
+            lalu langsung menulis 1 — dalam <strong>satu instruksi CPU yang tidak bisa disela</strong>.
+            Jika nilai lama = 0, artinya kita berhasil mengambil lock.
+            Jika nilai lama = 1, artinya orang lain duluan — kita loop dan coba lagi.
+        </div>
+
+        <div class="concept-note note-caution">
+            <strong>Perhatian CPU usage:</strong> jalankan <code>./spin</code> lalu buka terminal lain
+            dan ketik <code>top</code>. Amati bahwa proses <code>spin</code> menggunakan CPU mendekati
+            100% per core — karena thread yang menunggu tidak tidur, melainkan terus-menerus mengecek flag.
+        </div>
+
+        <div class="observe-list">
+            <strong>Yang perlu diobservasi</strong>
+            <ol>
+                <li>Jalankan <code>./spin</code> tiga kali — hasilnya selalu 2.000.000? (harus ya)</li>
+                <li>Bandingkan: <code>time ./mutex</code> vs <code>time ./spin</code> — mana lebih cepat, dan seberapa besar selisihnya?</li>
+                <li>Buka <code>top</code> saat <code>./spin</code> berjalan — amati CPU usage vs saat <code>./mutex</code> berjalan.</li>
+                <li>Diskusikan: kapan spinlock lebih cocok dipakai daripada mutex?</li>
+            </ol>
+        </div>
+
+        <pre><code class="language-c">/*
+ * 03_spinlock.c – Spinlock dengan instruksi atomik Test-and-Set
+ * Compile: gcc -Wall -pthread -O0 -o spin 03_spinlock.c
+ *
+ * Bandingkan kecepatan:
+ *   time ./mutex
+ *   time ./spin
+ *
+ * Pantau CPU saat spinlock berjalan:
+ *   top   (amati CPU usage mendekati 100% per core)
+ */
+#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+
+#define LOOP 1000000
+
+int counter = 0;
+int flag = 0; /* 0 = bebas, 1 = terkunci */
+
+void spin_lock(int *f) {
+    /* __sync_lock_test_and_set: baca nilai lama, lalu tulis 1 — atomik */
+    while (__sync_lock_test_and_set(f, 1) == 1)
+        ; /* putar terus sampai mendapat 0 (berhasil ambil lock) */
+}
+
+void spin_unlock(int *f) {
+    __sync_lock_release(f); /* tulis 0 secara atomik */
+}
+
+void *increment(void *arg) {
+    for (int i = 0; i &lt; LOOP; i++) {
+        spin_lock(&amp;flag);
+        counter++;
+        spin_unlock(&amp;flag);
+    }
+    return NULL;
+}
+
+int main(void) {
+    pthread_t t1, t2;
+
+    pthread_create(&amp;t1, NULL, increment, NULL);
+    pthread_create(&amp;t2, NULL, increment, NULL);
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+
+    printf("Ekspektasi : %d\n", LOOP * 2);
+    printf("Hasil nyata: %d\n", counter);
+
+    if (counter == LOOP * 2)
+        printf("STATUS: Benar! Spinlock (Test-and-Set) berhasil.\n");
+    else
+        printf("STATUS: Salah — ada bug di kode ini.\n");
+
+    return 0;
+}</code></pre>
+    </div>
+
+    <footer>&copy; 2026 lectura.id/course/os — Institut Teknologi Sumatera</footer>
+</div>
+
+<script>
+    hljs.highlightAll();
+
+    function copyCode(btn) {
+        const pre = btn.closest('.code-card').querySelector('pre code');
+        const text = pre.innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            btn.textContent = 'Tersalin!';
+            setTimeout(() => { btn.textContent = 'Salin kode'; }, 2000);
+        });
+    }
+</script>
+</body>
+</html>
