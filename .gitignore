@@ -13,3 +13,21 @@ node_modules/
 3_Tugas/quiz*
 quiz_prauts/
 soal_uts
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.nav
+*.snm
+*.vrb
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.synctex(busy)
+
+# Compiled C binaries in handson_code
+4_handson_code/**/race
+4_handson_code/**/mutex
+4_handson_code/**/spin

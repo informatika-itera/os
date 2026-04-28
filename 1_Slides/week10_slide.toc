@@ -1,5 +1,0 @@
-\beamer@sectionintoc {1}{Pembuka \& Motivasi}{4}{0}{1}
-\beamer@sectionintoc {2}{Thread Abstraction}{11}{0}{2}
-\beamer@sectionintoc {3}{Race Condition}{19}{0}{3}
-\beamer@sectionintoc {4}{Critical Section}{30}{0}{4}
-\beamer@sectionintoc {5}{Ringkasan \& Penutup}{39}{0}{5}
