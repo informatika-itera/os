@@ -1093,9 +1093,9 @@
         \hline
         \textbf{F1} & -- & \cellcolor{green!20}0 & 0 & 0 & 0 & \cellcolor{red!20}3 & 3 & 3 & \cellcolor{red!20}2 & 2 \\
         \hline
-        \textbf{F2} & -- & -- & \cellcolor{green!20}1 & 1 & 1 & 1 & 1 & 1 & 1 & \cellcolor{red!20}3 \\
+        \textbf{F2} & -- & -- & \cellcolor{green!20}1 & 1 & 1 & 1 & \cellcolor{red!20}0 & 0 & 0 & \cellcolor{red!20}3 \\
         \hline
-        \textbf{Fault?} & \cellcolor{green!20}Ya & \cellcolor{green!20}Ya & \cellcolor{green!20}Ya & \cellcolor{red!20}Ya & -- & \cellcolor{red!20}Ya & -- & \cellcolor{red!20}Ya & \cellcolor{red!20}Ya & \cellcolor{red!20}Ya \\
+        \textbf{Fault?} & \cellcolor{green!20}Ya & \cellcolor{green!20}Ya & \cellcolor{green!20}Ya & \cellcolor{red!20}Ya & -- & \cellcolor{red!20}Ya & \cellcolor{red!20}Ya & \cellcolor{red!20}Ya & \cellcolor{red!20}Ya & \cellcolor{red!20}Ya \\
         \hline
     \end{tabular}
 
@@ -1150,7 +1150,7 @@
 \begin{frame}
     \frametitle{Algoritma Optimal (OPT)}
     \framesubtitle{Ganti page yang paling lama tidak akan digunakan}
-    \footnotesize
+    \scriptsize
 
     \begin{block}{Prinsip}
         Keluarkan page yang \tem{paling jauh dibutuhkan di masa depan}. Menghasilkan page fault paling sedikit, tapi \tem{tidak bisa diimplementasikan} di sistem nyata (butuh pengetahuan masa depan). Digunakan sebagai acuan ideal.
@@ -1160,17 +1160,17 @@
     \textbf{Contoh:} 3 frame, urutan akses: \tem{7, 0, 1, 2, 0, 3, 0, 4, 2, 3}
 
     \vspace{0.1cm}
-    \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|}
         \hline
         \textbf{Akses} & 7 & 0 & 1 & 2 & 0 & 3 & 0 & 4 & 2 & 3 \\
         \hline
-        \textbf{F0} & \cellcolor{green!20}7 & 7 & 7 & \cellcolor{red!20}2 & 2 & 2 & 2 & 2 & 2 & 2 \\
+    \textbf{F0} & \cellcolor{green!20}7 & 7 & 7 & \cellcolor{red!20}2 & 2 & 2 & 2 & 2 & 2 & 2 \\
         \hline
-        \textbf{F1} & -- & \cellcolor{green!20}0 & 0 & 0 & 0 & 0 & 0 & \cellcolor{red!20}4 & 4 & \cellcolor{red!20}3 \\
+    \textbf{F1} & -- & \cellcolor{green!20}0 & 0 & 0 & 0 & 0 & 0 & \cellcolor{red!20}4 & 4 & 4 \\
         \hline
-        \textbf{F2} & -- & -- & \cellcolor{green!20}1 & 1 & 1 & \cellcolor{red!20}3 & 3 & 3 & 3 & 3 \\
+    \textbf{F2} & -- & -- & \cellcolor{green!20}1 & 1 & 1 & \cellcolor{red!20}3 & 3 & 3 & 3 & 3 \\
         \hline
-        \textbf{Fault?} & \cellcolor{green!20}Ya & \cellcolor{green!20}Ya & \cellcolor{green!20}Ya & \cellcolor{red!20}Ya & -- & \cellcolor{red!20}Ya & -- & \cellcolor{red!20}Ya & -- & -- \\
+    \textbf{Fault?} & \cellcolor{green!20}Ya & \cellcolor{green!20}Ya & \cellcolor{green!20}Ya & \cellcolor{red!20}Ya & -- & \cellcolor{red!20}Ya & -- & \cellcolor{red!20}Ya & -- & -- \\
         \hline
     \end{tabular}
 
@@ -1190,7 +1190,7 @@
 \begin{frame}
     \frametitle{Algoritma LRU}
     \framesubtitle{Ganti page yang paling lama tidak digunakan}
-    \footnotesize
+    \tiny
 
     \begin{block}{Prinsip}
         Keluarkan page yang \tem{terakhir kali digunakan paling lama yang lalu}. LRU menggunakan history penggunaan sebagai aproksimasi masa depan dan \tem{bisa diimplementasikan} di sistem nyata.
@@ -1204,11 +1204,11 @@
         \hline
         \textbf{Akses} & 7 & 0 & 1 & 2 & 0 & 3 & 0 & 4 & 2 & 3 \\
         \hline
-        \textbf{F0} & \cellcolor{green!20}7 & 7 & 7 & \cellcolor{red!20}2 & 2 & 2 & 2 & \cellcolor{red!20}4 & 4 & \cellcolor{red!20}3 \\
+        \textbf{F0} & \cellcolor{green!20}7 & 7 & 7 & \cellcolor{red!20}2 & 2 & 2 & 2 & \cellcolor{red!20}4 & 4 & 4 \\
         \hline
-        \textbf{F1} & -- & \cellcolor{green!20}0 & 0 & 0 & 0 & \cellcolor{red!20}3 & 3 & 3 & 3 & 3 \\
+        \textbf{F1} & -- & \cellcolor{green!20}0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \cellcolor{red!20}3 \\
         \hline
-        \textbf{F2} & -- & -- & \cellcolor{green!20}1 & 1 & 1 & 1 & 1 & 1 & \cellcolor{red!20}2 & 2 \\
+        \textbf{F2} & -- & -- & \cellcolor{green!20}1 & 1 & 1 & \cellcolor{red!20}3 & 3 & 3 & \cellcolor{red!20}2 & 2 \\
         \hline
         \textbf{Fault?} & \cellcolor{green!20}Ya & \cellcolor{green!20}Ya & \cellcolor{green!20}Ya & \cellcolor{red!20}Ya & -- & \cellcolor{red!20}Ya & -- & \cellcolor{red!20}Ya & \cellcolor{red!20}Ya & \cellcolor{red!20}Ya \\
         \hline
@@ -1218,6 +1218,12 @@
     \begin{columns}[T]
         \column{0.58\textwidth}
         \textbf{Victim dipilih} berdasarkan timestamp: ganti page yang terakhir dipakai paling lama lalu.
+
+        \vspace{0.1cm}
+        \textbf{Catatan penting:} saat akses ke-8 meminta page 4, isi frame sebelumnya adalah 2, 0, 3.
+        Page 2 terakhir dipakai pada akses ke-4, sedangkan 3 dipakai pada akses ke-6 dan 0 pada akses ke-7.
+        Jadi LRU tetap mengganti \tem{2}, meskipun page 2 akan dipakai lagi di akses berikutnya.
+        Itulah bedanya LRU dengan OPT: \textbf{LRU tidak melihat masa depan}.
 
         \column{0.38\textwidth}
         \begin{alertblock}{Hasil LRU}
@@ -1230,7 +1236,7 @@
 \begin{frame}
     \frametitle{Perbandingan: FIFO vs OPT vs LRU}
     \framesubtitle{Ringkasan tiga algoritma pada contoh yang sama}
-    \small
+    \footnotesize
 
     \textbf{Urutan akses:} \tem{7, 0, 1, 2, 0, 3, 0, 4, 2, 3} \quad|\quad \textbf{Frame:} 3
 
@@ -1268,7 +1274,7 @@
 \begin{frame}
     \frametitle{Latihan: Bandingkan Ketiga Algoritma}
     \framesubtitle{Hitung page fault untuk FIFO, OPT, dan LRU}
-    \footnotesize
+    \scriptsize
 
     \begin{block}{Soal}
         Diberikan \textbf{4 frame} (awalnya kosong) dan urutan akses page:
@@ -1414,11 +1420,11 @@
         \hline
         \textbf{F0} & \cellcolor{green!20}2 & 2 & 2 & 2 & \cellcolor{red!20}5 & 5 & 5 & 5 & \cellcolor{red!20}3 & 3 & 3 & 3 \\
         \hline
-        \textbf{F1} & -- & \cellcolor{green!20}3 & 3 & 3 & 3 & 3 & \cellcolor{red!20}4 & 4 & 4 & \cellcolor{red!20}2 & 2 & 2 \\
+        \textbf{F1} & -- & \cellcolor{green!20}3 & 3 & 3 & 3 & \cellcolor{red!20}2 & 2 & 2 & 2 & 2 & \cellcolor{red!20}5 & 5 \\
         \hline
-        \textbf{F2} & -- & -- & -- & \cellcolor{green!20}1 & 1 & 1 & 1 & 1 & 1 & 1 & \cellcolor{red!20}5 & 5 \\
+        \textbf{F2} & -- & -- & -- & \cellcolor{green!20}1 & 1 & 1 & \cellcolor{red!20}4 & 4 & 4 & 4 & 4 & \cellcolor{red!20}2 \\
         \hline
-        \textbf{Fault?} & \cellcolor{green!20}Ya & \cellcolor{green!20}Ya & -- & \cellcolor{green!20}Ya & \cellcolor{red!20}Ya & -- & \cellcolor{red!20}Ya & -- & \cellcolor{red!20}Ya & \cellcolor{red!20}Ya & \cellcolor{red!20}Ya & -- \\
+        \textbf{Fault?} & \cellcolor{green!20}Ya & \cellcolor{green!20}Ya & -- & \cellcolor{green!20}Ya & \cellcolor{red!20}Ya & \cellcolor{red!20}Ya & \cellcolor{red!20}Ya & -- & \cellcolor{red!20}Ya & -- & \cellcolor{red!20}Ya & \cellcolor{red!20}Ya \\
         \hline
     \end{tabular}
 
@@ -1434,7 +1440,7 @@
         \column{0.48\textwidth}
         \begin{alertblock}{Hasil FIFO}
             \textbf{Page fault: 9 dari 12 akses}\\
-            Page hit: 3 (akses ke 3, 6, 12)
+            Page hit: 3 (akses ke 3, 8, 10)
         \end{alertblock}
     \end{columns}
 \end{frame}
@@ -1448,13 +1454,13 @@
         \hline
         \textbf{Akses} & 2 & 3 & 2 & 1 & 5 & 2 & 4 & 5 & 3 & 2 & 5 & 2 \\
         \hline
-        \textbf{F0} & \cellcolor{green!20}2 & 2 & 2 & 2 & 2 & 2 & \cellcolor{red!20}4 & 4 & \cellcolor{red!20}3 & \cellcolor{red!20}2 & 2 & 2 \\
+        \textbf{F0} & \cellcolor{green!20}2 & 2 & 2 & 2 & 2 & 2 & 2 & 2 & \cellcolor{red!20}3 & 3 & 3 & 3 \\
         \hline
         \textbf{F1} & -- & \cellcolor{green!20}3 & 3 & 3 & \cellcolor{red!20}5 & 5 & 5 & 5 & 5 & 5 & 5 & 5 \\
         \hline
-        \textbf{F2} & -- & -- & -- & \cellcolor{green!20}1 & 1 & 1 & 1 & 1 & 1 & 1 & \cellcolor{red!20}5 & 5 \\
+        \textbf{F2} & -- & -- & -- & \cellcolor{green!20}1 & 1 & 1 & \cellcolor{red!20}4 & 4 & 4 & \cellcolor{red!20}2 & 2 & 2 \\
         \hline
-        \textbf{Fault?} & \cellcolor{green!20}Ya & \cellcolor{green!20}Ya & -- & \cellcolor{green!20}Ya & \cellcolor{red!20}Ya & -- & \cellcolor{red!20}Ya & -- & \cellcolor{red!20}Ya & \cellcolor{red!20}Ya & \cellcolor{red!20}Ya & -- \\
+        \textbf{Fault?} & \cellcolor{green!20}Ya & \cellcolor{green!20}Ya & -- & \cellcolor{green!20}Ya & \cellcolor{red!20}Ya & -- & \cellcolor{red!20}Ya & -- & \cellcolor{red!20}Ya & \cellcolor{red!20}Ya & -- & -- \\
         \hline
     \end{tabular}
 
@@ -1462,13 +1468,13 @@
     \begin{columns}[T]
         \column{0.48\textwidth}
         \begin{exampleblock}{Hasil LRU}
-            \textbf{Page fault: 9 dari 12 akses}\\
-            Page hit: 3 (akses ke 3, 6, 12)
+            \textbf{Page fault: 7 dari 12 akses}\\
+            Page hit: 5 (akses ke 3, 6, 8, 11, 12)
         \end{exampleblock}
 
         \column{0.48\textwidth}
         \begin{block}{Kesimpulan}
-            Pada kasus ini FIFO dan LRU menghasilkan jumlah page fault yang \tem{sama (9)}. Hasilnya bisa berbeda tergantung urutan akses dan jumlah frame.
+            Pada kasus ini LRU lebih efisien daripada FIFO: \tem{7 fault vs 9 fault}. Riwayat akses membantu LRU mempertahankan page yang masih relevan lebih lama.
         \end{block}
     \end{columns}
 \end{frame}
