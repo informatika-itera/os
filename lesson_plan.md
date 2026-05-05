@@ -154,43 +154,36 @@ https://pages.cs.wisc.edu/~remzi/OSTEP/threads-sema.pdf
 
 ⸻
 
-Minggu 12 — Deadlock
-
-Cakupan:
-	•	Empat kondisi deadlock
-	•	Resource allocation graph
-	•	Detection & avoidance
-
-Referensi:
-https://pages.cs.wisc.edu/~remzi/OSTEP/threads-deadlock.pdf
-
-⸻
-
-Minggu 13 — File System Dasar
+Minggu 12 — File System Dasar & Disk Scheduling
 
 Cakupan:
 	•	Persistence concept
 	•	File abstraction
 	•	Inode & metadata
 	•	Directory structure
+	•	Disk scheduling: FCFS, SSTF, SCAN, C-SCAN, LOOK
+	•	Trade-off scheduling algorithms
 
-Referensi:
-https://pages.cs.wisc.edu/~remzi/OSTEP/file-intro.pdf
+Referensi OSTEP:
+	https://pages.cs.wisc.edu/~remzi/OSTEP/file-intro.pdf
+	https://pages.cs.wisc.edu/~remzi/OSTEP/disk-intro.pdf
 
-⸻
 
-Minggu 14 — Crash Consistency & Storage
+
+	Minggu 13 — Crash Consistency & Storage
 
 Cakupan:
 	•	Journaling
 	•	Write-ahead logging
-	•	RAID concept
-	•	Integrasi konsep CPU–Memory–Storage
+	•	FSck concept
+	•	RAID levels (0, 1, 4, 5)
 
 Referensi:
 https://pages.cs.wisc.edu/~remzi/OSTEP/file-journaling.pdf
 https://pages.cs.wisc.edu/~remzi/OSTEP/file-raid.pdf
 
 ⸻
+
+Minggu 14 — Quiz
 
 Jika diinginkan, saya bisa tambahkan versi yang sudah dipetakan ke CPMK + indikator asesmen + bobot evaluasi agar siap masuk RPS resmi ITERA.

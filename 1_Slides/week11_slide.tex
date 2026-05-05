@@ -1006,61 +1006,22 @@ time ./spin    # spinlock
 \end{frame}
 
 %================================================
-% BAGIAN 4: LOCK PITFALLS — PREVIEW DEADLOCK
+% BAGIAN 4: DEADLOCK
 %================================================
-\section{Jebakan Lock dan Preview Deadlock}
+\section{Deadlock}
 
 \begin{frame}[plain]
     \begin{center}
         \vspace{3cm}
-        \Huge\textbf{Jebakan Lock}\\[0.4em]
-        \Large\textit{Apa yang Bisa Salah — dan Minggu Depan}
+        \Huge\textbf{Deadlock}\\[0.4em]
+        \Large\textit{Ketika Tidak Ada yang Bisa Maju}
     \end{center}
 \end{frame}
 
-%--- Slide 24: Lupa unlock ---
-\begin{frame}[fragile,shrink=5]
-    \frametitle{Jebakan 1: Lupa Membuka Kunci}
-    \framesubtitle{Sudah dibahas di Section 1 — tapi ini yang paling sering terjadi}
-    \footnotesize
-
-    \begin{columns}[T]
-        \column{0.50\textwidth}
-        \begin{alertblock}{Contoh nyata — sulit dilihat}
-\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
-pthread_mutex_lock(&lock);
-
-if (data == NULL) {
-    log_error("data kosong");
-    return -1;   // BAHAYA: unlock terlewat
-}
-
-proses(data);
-pthread_mutex_unlock(&lock);
-\end{lstlisting}
-        \end{alertblock}
-
-        \column{0.46\textwidth}
-        \begin{block}{Apa yang terjadi?}
-            \begin{itemize}
-                \item Kalau \texttt{data == NULL}, fungsi \texttt{return} lebih dulu
-                \item \texttt{unlock} tidak pernah dipanggil
-                \item Lock tetap terkunci \tem{selamanya}
-                \item Thread lain menunggu — \textbf{program macet}
-            \end{itemize}
-        \end{block}
-
-        \begin{exampleblock}{Cara aman}
-            Selalu pastikan setiap jalur keluar dari fungsi memanggil \texttt{unlock}.\\
-            Atau gunakan RAII (di C++).
-        \end{exampleblock}
-    \end{columns}
-\end{frame}
-
-%--- Slide 25: Deadlock dua thread ---
+%--- Slide 24: Apa itu deadlock ---
 \begin{frame}[shrink=5]
-    \frametitle{Jebakan 2: Deadlock — Dua Thread Saling Tunggu}
-    \framesubtitle{Ini lebih berbahaya — tidak ada yang bisa maju}
+    \frametitle{Deadlock: Dua Thread Saling Tunggu}
+    \framesubtitle{Ini lebih berbahaya dari lupa unlock — tidak ada yang bisa maju}
     \footnotesize
 
     \begin{columns}[T]
@@ -1103,40 +1064,166 @@ pthread_mutex_unlock(&lock);
     \end{columns}
 \end{frame}
 
-%--- Slide 26: Preview minggu depan ---
+%--- Slide 25: Empat kondisi deadlock ---
+\begin{frame}
+    \frametitle{Empat Kondisi yang Menyebabkan Deadlock}
+    \framesubtitle{Keempatnya harus terpenuhi sekaligus — cukup satu yang dilanggar, deadlock tidak terjadi}
+    \small
+
+    \begin{enumerate}
+        \item[\textbf{C1}] \textbf{Mutual Exclusion}: resource hanya boleh dipakai satu thread pada satu waktu.
+        \vspace{0.3em}
+        \item[\textbf{C2}] \textbf{Hold and Wait}: thread sudah memegang resource, masih minta resource lain.
+        \vspace{0.3em}
+        \item[\textbf{C3}] \textbf{No Preemption}: resource tidak bisa diambil paksa dari thread yang sudah pegang.
+        \vspace{0.3em}
+        \item[\textbf{C4}] \textbf{Circular Wait}: ada chain melingkar di mana T1 tunggu T2, T2 tunggu T3, ..., Tn tunggu T1.
+    \end{enumerate}
+
+    \vspace{0.5em}
+    \begin{block}{Implikasi}
+        \centering
+        Jika kita bisa \tem{melanggar salah satu kondisi}, deadlock \textbf{tidak akan terjadi}.\\
+        Itulah dasar strategi pencegahan deadlock.
+    \end{block}
+\end{frame}
+
+%--- Slide 26: Resource Allocation Graph ---
 \begin{frame}[shrink=5]
-    \frametitle{Minggu Depan: Deadlock Lebih Dalam}
-    \framesubtitle{Hari ini baru melihat — minggu depan kita bedah tuntas}
+    \frametitle{Resource Allocation Graph: Gambar Deadlock}
+    \framesubtitle{Visualisasi yang membantu mendeteksi apakah deadlock sudah terjadi}
     \small
 
     \begin{columns}[T]
         \column{0.48\textwidth}
-        \begin{block}{Yang sudah kita tahu hari ini}
+        \begin{block}{Komponen}
             \begin{itemize}
-                \item Deadlock terjadi saat dua thread saling menunggu lock
-                \item Lupa unlock bisa menyebabkan program macet
-                \item Urutan lock yang berbeda = bahaya
+                \item \textbf{Node Thread} (T1, T2, ...): digambar sebagai persegi
+                \item \textbf{Node Resource} (R1, R2, ...): digambar sebagai persegi dengan titik di dalam
+                \item \textbf{Panah ``hold'':} T $\to$ R = thread menahan resource
+                \item \textbf{Panah ``request'': } R $\to$ T = thread minta resource
             \end{itemize}
         \end{block}
 
         \column{0.48\textwidth}
-        \begin{exampleblock}{Yang akan dibahas minggu depan}
-            \begin{itemize}
-                \item \textbf{Empat kondisi} yang harus ada agar deadlock terjadi
-                \item \textbf{Resource allocation graph} — cara menggambar deadlock
-                \item \textbf{Cara mencegah} deadlock sejak awal
-                \item \textbf{Cara mendeteksi} deadlock yang sudah terjadi
-            \end{itemize}
+        \begin{alertblock}{Deadlock terdeteksi}
+            \centering
+            Jika ada \textbf{cycle} di graf,\\
+            dan setiap resource di cycle\\
+            hanya punya \textbf{satu instance}.\\
+            \tem{Deadlock terjadi.}
+        \end{alertblock}
+
+        \begin{exampleblock}{Tidak deadlock}
+            Cycle tapi ada resource dengan\\
+            \textbf{multiple instances} → mungkin\\
+            tidak deadlock, perlu cek lebih lanjut.
         \end{exampleblock}
     \end{columns}
 
-    \vspace{0.5em}
-    \begin{alertblock}{Pesan untuk minggu ini}
+    \centering
+    \begin{tikzpicture}[scale=0.75, transform shape]
+        \node[draw, fill=blue!20, rounded corners] (t1) at (0,2.5) {$T_1$};
+        \node[draw, fill=blue!20, rounded corners] (t2) at (4,2.5) {$T_2$};
+        \node[draw, fill=red!15, font=\tiny] (r1) at (2,0.5) {$R_1$};
+        \node[draw, fill=red!15, font=\tiny] (r2) at (2,4) {$R_2$};
+
+        \draw[->, thick, blue!60] (t1) -- node[left, font=\tiny]{pegang} (r1);
+        \draw[->, thick, green!60!black] (t2) -- node[right, font=\tiny]{pegang} (r2);
+        \draw[->, dashed, thick, blue!60] (t1) -- node[right, font=\tiny]{minta} (r2);
+        \draw[->, dashed, thick, green!60!black] (t2) -- node[left, font=\tiny]{minta} (r1);
+
+        \node[font=\small, red!70] at (2, 5) {\textbf{Deadlock}: T1 $\to$ R1 $\to$ T2 $\to$ R2 $\to$ T1};
+    \end{tikzpicture}
+\end{frame}
+
+%--- Slide 27: Strategi pencegahan ---
+\begin{frame}
+    \frametitle{Cara Mencegah Deadlock}
+    \framesubtitle{Langgar salah satu dari empat kondisi}
+    \small
+
+    \begin{tabular}{p{2.2cm} p{3.5cm} p{2.8cm}}
+        \textbf{Kondisi} & \textbf{Cara Melanggar} & \textbf{Implikasi} \\
+        \hline
+        Mutual Exclusion & Buat resource tidak eksklusif & Tidak selalu bisa \\
+        Hold and Wait & Minta semua resource sekaligus & Boros, efisien turun \\
+        No Preemption & Ambil paksa resource & Bisa rusak state \\
+        Circular Wait & \tem{Urutan lock konsisten} & \textbf{Praktis} \\
+    \end{tabular}
+
+    \vspace{1em}
+    \begin{alertblock}{Strategi paling praktis}
         \centering
-        \footnotesize
-        Selalu \textbf{lock} → kerja → \textbf{unlock} dalam urutan yang konsisten.\\
-        Jangan pernah keluar dari fungsi tanpa melepas semua lock yang sudah diambil.
+        \textbf{Urutan lock yang konsisten}.\\
+        Jika semua thread mengambil lock A dulu baru B,\\
+        maka \tem{circular wait tidak akan pernah terbentuk}.
     \end{alertblock}
+\end{frame}
+
+%--- Slide 28: Checkpoint deadlock ---
+\begin{frame}[shrink=10]
+    \frametitle{Checkpoint: Deadlock}
+    \framesubtitle{Tiga pertanyaan — jawab tanpa melihat slide sebelumnya}
+    \small
+
+    \begin{enumerate}
+        \item Jelaskan empat kondisi yang harus terpenuhi agar deadlock terjadi.
+        \item Kapan kita bisa yakin deadlock terjadi hanya dengan melihat Resource Allocation Graph?
+        \item Apa strategi paling praktis untuk mencegah deadlock? Jelaskan alasannya.
+    \end{enumerate}
+
+    \begin{block}{Jawaban}
+        \footnotesize
+        \begin{enumerate}
+            \item Mutual exclusion, hold and wait, no preemption, circular wait. Keempatnya harus ada bersamaan.
+            \item Jika ada cycle dan setiap resource dalam cycle hanya punya satu instance.
+            \item Urutan lock konsisten — melanggar circular wait tanpa biaya tinggi.
+        \end{enumerate}
+    \end{block}
+\end{frame}
+
+%================================================
+% CLOSING
+%================================================
+\section{Rangkuman}
+
+\begin{frame}[plain]
+    \begin{center}
+        \vspace{3cm}
+        \Huge\textbf{Rangkuman Week 11}\\[0.4em]
+        \Large\textit{Apa yang Sudah Kita Pelajari}
+    \end{center}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Rangkuman}
+    \framesubtitle{Lock, Atomic Instructions, dan Deadlock}
+    \small
+
+    \begin{block}{Lock}
+        \begin{itemize}
+            \item Lock punya dua operasi: acquire (lock) dan release (unlock)
+            \item \texttt{pthread\_mutex}: sleep-based lock, hemat CPU
+            \item Spinlock: busy-wait lock, lebih cepat untuk tunggu singkat
+        \end{itemize}
+    \end{block}
+
+    \begin{block}{Hardware Foundation}
+        \begin{itemize}
+            \item Software-only lock gagal karena CHECK dan SET terpisah
+            \item Instruksi atomik: Test-and-Set, Compare-and-Swap
+            \item Atomic = satu instruksi yang tidak bisa disela
+        \end{itemize}
+    \end{block}
+
+    \begin{block}{Deadlock}
+        \begin{itemize}
+            \item Empat kondisi: mutual exclusion, hold \& wait, no preemption, circular wait
+            \item Resource Allocation Graph untuk deteksi deadlock
+            \item Pencegahan praktis: urutan lock yang konsisten
+        \end{itemize}
+    \end{block}
 \end{frame}
 
 \end{document}
