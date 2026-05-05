@@ -44,9 +44,7 @@
     \begin{frame}[plain]
         \vfill
         \centering
-        {\usebeamerfont{title}\color{nyublue}\Large \insertsectionhead\par}
-        \vspace{0.3cm}
-        {\large Week 12}
+        {\usebeamerfont{title}\color{nyublue}\Huge \insertsectionhead\par}
         \vfill
     \end{frame}
 }
@@ -85,13 +83,6 @@
 % BAGIAN 1: PERSISTENCE & ABSTRAKSI
 %================================================
 \section{Konsep Persistence \& Abstraksi File}
-
-\begin{frame}[plain]
-    \begin{center}
-        \vspace{3cm}
-        \Huge\textbf{Konsep Persistence \& Abstraksi File}
-    \end{center}
-\end{frame}
 
 %--- Slide 1: Masalah Volatilitas ---
 \begin{frame}[shrink=5]
@@ -261,18 +252,28 @@ close(fd);
     \end{columns}
 \end{frame}
 
+%--- Slide 6: Checkpoint 1 ---
+\begin{frame}
+    \frametitle{Checkpoint 1: Persistence \& Abstraksi}
+    \framesubtitle{Cek pemahaman sebelum lanjut}
+    \small
+    \begin{enumerate}
+        \item Mengapa kita tidak menyimpan semua data secara permanen di RAM saja?
+        \item Apa bedanya cara pengguna melihat file vs cara OS melihat file?
+        \item Apa isi dari sebuah direktori pada tingkatan teknis terbawah?
+    \end{enumerate}
+    \vspace{0.5cm}
+    \begin{block}{Kunci Jawaban Singkat}
+        1. RAM bersifat volatile (hilang saat mati) dan kapasitasnya mahal/terbatas.\\
+        2. Pengguna melihat nama file (tingkat tinggi), OS melihat file sebagai \textit{array of bytes} yang dipetakan ke blok fisik disk lewat inode.\\
+        3. Daftar pemetaan antara "Nama File" ke "Nomor Inode".
+    \end{block}
+\end{frame}
+
 %================================================
 % BAGIAN 2: INODE & METADATA
 %================================================
 \section{Struktur Internal: Inode \& Metadata}
-
-\begin{frame}[plain]
-    \begin{center}
-        \vspace{3cm}
-        \Huge\textbf{Struktur Internal: Inode \& Metadata}\\[0.4em]
-        \Large\textit{Bagaimana OS Menyimpan File di Balik Layar}
-    \end{center}
-\end{frame}
 
 %--- Slide 1: Konsep Inode ---
 \begin{frame}[shrink=5]
@@ -293,17 +294,17 @@ close(fd);
             \item \textbf{Isi}: Disimpan di \textit{Data Blocks} (Disk).
         \end{enumerate}
 
-        \column{0.48\textwidth}
+        \column{0.55\textwidth}
         \centering
-        \begin{tikzpicture}[scale=0.75, transform shape]
+        \begin{tikzpicture}[scale=0.7, transform shape]
             % Direktori
-            \node[draw, fill=yellow!25, rounded corners, minimum width=2.5cm, minimum height=1.5cm, align=center] (dir) at (0, 0) {\textbf{Direktori}\\\scriptsize \texttt{"tugas.pdf"}\\$\downarrow$\\\scriptsize Inode \#42};
+            \node[draw, fill=yellow!25, rounded corners, minimum width=2.2cm, minimum height=1.5cm, align=center] (dir) at (0, 0) {\textbf{Direktori}\\\scriptsize \texttt{"tugas.pdf"}\\$\downarrow$\\\scriptsize Inode \#42};
             
             % Inode
-            \node[draw, fill=blue!20, rounded corners, minimum width=2.5cm, minimum height=1.5cm, align=center] (inode) at (4, 0) {\textbf{Inode \#42}\\\scriptsize Ukuran: 5 MB\\\scriptsize Pemilik: user\\\scriptsize Pointer $\to$ Blok};
+            \node[draw, fill=blue!20, rounded corners, minimum width=2.2cm, minimum height=1.5cm, align=center] (inode) at (3.5, 0) {\textbf{Inode \#42}\\\scriptsize Ukuran: 5MB\\\scriptsize Pemilik: user\\\scriptsize Ptr $\to$ Blok};
             
             % Data Block
-            \node[draw, fill=green!20, minimum width=2.5cm, minimum height=1.5cm, align=center] (data) at (8, 0) {\textbf{Data Block}\\\scriptsize 01011001...\\\scriptsize (Isi PDF sebenarnya)};
+            \node[draw, fill=green!20, minimum width=2.2cm, minimum height=1.5cm, align=center] (data) at (7.5, 0) {\textbf{Data Block}\\\scriptsize 01011001...\\\scriptsize (Isi File)};
 
             \draw[->, thick, dashed] (dir) -- node[above, font=\scriptsize] {menunjuk} (inode);
             \draw[->, thick] (inode) -- node[above, font=\scriptsize] {lokasi disk} (data);
@@ -599,26 +600,455 @@ Change: 2026-05-04 15:30:00.000000000
     \end{block}
 \end{frame}
 
-% 6. Checkpoint
+
+
+%================================================
+% BAGIAN 3: DISK SCHEDULING
+%================================================
+\section{Penjadwalan Disk (Disk Scheduling)}
+
+%--- Slide 20: Mengapa Butuh Penjadwalan Disk? ---
+\begin{frame}[shrink=5]
+    \frametitle{Mengapa Butuh Penjadwalan Disk?}
+    \framesubtitle{Masalah utama pada komponen mekanis}
+    \small
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{block}{I/O Disk Sangat Lambat}
+            Tidak seperti RAM yang elektronis, HDD (Hard Disk Drive) memiliki komponen \tem{mekanis} yang bergerak fisik. CPU bisa mengeksekusi jutaan instruksi dalam waktu yang dibutuhkan HDD untuk membaca satu blok data.
+        \end{block}
+        \textbf{Tujuan Penjadwalan:}
+        \begin{itemize}
+            \item Mengurangi total waktu pergerakan fisik disk.
+            \item Memaksimalkan \textit{throughput} (jumlah request I/O per detik).
+        \end{itemize}
+
+        \column{0.48\textwidth}
+        \begin{exampleblock}{Analogi: Kurir Gudang}
+            Bayangkan kurir di gudang raksasa. Jika dia mengambil paket berdasarkan urutan pesanan masuk tanpa memikirkan rute (loncat dari rak ujung kiri ke ujung kanan terus menerus), dia akan kelelahan dan lambat. \tem{Rute harus dioptimasi.}
+        \end{exampleblock}
+    \end{columns}
+\end{frame}
+
+%--- Slide 21: Anatomi Sederhana Hard Disk ---
 \begin{frame}
-    \frametitle{Checkpoint 1: Persistence \& Abstraksi}
-    \framesubtitle{Cek pemahaman sebelum lanjut}
+    \frametitle{Anatomi Hard Disk \& Komponen Waktu}
+    \framesubtitle{Dari mana kelambatan itu berasal?}
+    \small
+    \begin{columns}[T]
+        \column{0.50\textwidth}
+        \begin{center}
+        \begin{tikzpicture}[scale=0.8, transform shape]
+            % Disk platter
+            \draw[fill=gray!10, thick] (0,0) circle (2.5);
+            \draw[fill=gray!30, thick] (0,0) circle (1.8);
+            \draw[fill=gray!50, thick] (0,0) circle (1.1);
+            \draw[fill=black] (0,0) circle (0.1);
+            
+            % Tracks labels
+            \node at (0, -2.15) {\scriptsize Track luar};
+            \node at (0, -1.45) {\scriptsize Track dalam};
+
+            % Actuator arm
+            \draw[fill=blue!20, thick, rounded corners=2pt] (3, -2) -- (1.5, 0) -- (1.7, 0.2) -- (3.2, -1.8) -- cycle;
+            \draw[fill=red!50] (1.5,0) circle (0.1) node[above left] {\scriptsize Head};
+            \draw[fill=black] (3.1, -1.9) circle (0.15) node[below] {\scriptsize Pivot};
+            
+            % Movement arrows
+            \draw[<->, thick, red] (1.7, 0.3) -- (2.3, 0.9) node[midway, right] {\scriptsize Seek};
+            \draw[->, thick, blue] (-2.8, 0) arc (180:120:2.8) node[midway, left] {\scriptsize Rotasi};
+        \end{tikzpicture}
+        \end{center}
+
+        \column{0.48\textwidth}
+        \begin{block}{Dua Faktor Penentu Waktu}
+            \begin{enumerate}
+                \item \tem{Seek Time}: Waktu yang dibutuhkan lengan (\textit{actuator arm}) untuk memindahkan \textit{head} ke \textit{track/silinder} yang tepat. \textit{(Sangat lambat)}
+                \item \tem{Rotational Latency}: Waktu tunggu hingga \textit{sektor} yang dicari berputar tepat di bawah \textit{head}. \textit{(Cukup lambat)}
+            \end{enumerate}
+        \end{block}
+        \textit{Catatan: Disk Scheduling modern fokus meminimalkan \textbf{Seek Time}.}
+    \end{columns}
+\end{frame}
+
+%--- Slide 22: FCFS ---
+\begin{frame}
+    \frametitle{1. FCFS (First-Come, First-Serve)}
+    \framesubtitle{Paling sederhana tapi paling boros pergerakan}
+    \small
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{block}{Konsep FCFS}
+            Permintaan dilayani persis sesuai urutan kedatangannya.
+        \end{block}
+        \textbf{Karakteristik:}
+        \begin{itemize}
+            \item \tem{Adil}: Tidak ada request yang kelaparan (\textit{starvation}).
+            \item \tem{Tidak efisien}: \textit{Head} disk bisa bergerak liar bolak-balik dari ujung ke ujung.
+        \end{itemize}
+
+        \column{0.48\textwidth}
+        \begin{exampleblock}{Contoh Kasus}
+            Antrean request track: 98, 183, 37, 122, 14, 124, 65, 67\\
+            Posisi Head Awal: \textbf{53}
+            
+            \vspace{0.2cm}
+            \textit{Pergerakan head:}\\
+            53 $\to$ 98 $\to$ 183 $\to$ 37 $\to$ 122 $\to$ 14 $\to$ 124 $\to$ 65 $\to$ 67
+            
+            \vspace{0.2cm}
+            \textbf{Total Pergerakan:} 640 silinder!
+        \end{exampleblock}
+    \end{columns}
+\end{frame}
+
+%--- Slide 23: SSTF ---
+\begin{frame}
+    \frametitle{2. SSTF (Shortest Seek Time First)}
+    \framesubtitle{Pilih yang paling dekat dari posisi sekarang}
+    \small
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{block}{Konsep SSTF}
+            Melayani permintaan yang posisinya \tem{paling dekat} dengan posisi \textit{head} saat ini, mengabaikan urutan kedatangan.
+        \end{block}
+        \textbf{Karakteristik:}
+        \begin{itemize}
+            \item \tem{Efisien}: Mengurangi total pergerakan head secara drastis dibanding FCFS.
+            \item \tem{Masalah}: Rentan \textit{\textbf{Starvation}}. Request yang jauh bisa tidak dilayani terus menerus jika request baru bermunculan di dekat head.
+        \end{itemize}
+
+        \column{0.48\textwidth}
+        \begin{exampleblock}{Contoh Kasus}
+            Antrean: 98, 183, 37, 122, 14, 124, 65, 67\\
+            Posisi Head Awal: \textbf{53}
+            
+            \vspace{0.2cm}
+            \textit{Pergerakan head (cari terdekat):}\\
+            53 $\to$ 65 $\to$ 67 $\to$ 37 $\to$ 14 $\to$ 98 $\to$ 122 $\to$ 124 $\to$ 183
+            
+            \vspace{0.2cm}
+            \textbf{Total Pergerakan:} 236 silinder! (Jauh lebih baik dari 640)
+        \end{exampleblock}
+    \end{columns}
+\end{frame}
+
+%--- Slide 24: SCAN ---
+\begin{frame}
+    \frametitle{3. Algoritma SCAN (Elevator Algorithm)}
+    \framesubtitle{Maju terus pantang mundur (sampai mentok)}
+    \small
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{block}{Konsep SCAN}
+            \textit{Head} bergerak ke satu arah (misal ke track dalam), melayani semua request di jalurnya. Saat sampai di \tem{ujung disk}, ia berbalik arah dan melayani sisa request di jalur pulang.
+        \end{block}
+        
+        \begin{exampleblock}{Analogi: Lift}
+            Lift naik melayani semua lantai yang ditekan sampai lantai teratas, baru setelah itu turun melayani lantai bawah.
+        \end{exampleblock}
+
+        \column{0.48\textwidth}
+        \textbf{Karakteristik:}
+        \begin{itemize}
+            \item Mencegah \textit{starvation} ekstrem dari SSTF.
+            \item Efisien seperti arah sapuan.
+            \item \tem{Masalah}: Kurang adil bagi request yang berada tepat di belakang arah pergerakan \textit{head}, karena harus menunggu \textit{head} sampai ujung dan berbalik arah.
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+%--- Slide 25: C-SCAN ---
+\begin{frame}
+    \frametitle{4. Algoritma C-SCAN (Circular SCAN)}
+    \framesubtitle{Sapuan satu arah demi keadilan}
+    \small
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{block}{Konsep C-SCAN}
+            Sama seperti SCAN, namun ketika \textit{head} mencapai ujung disk, ia \tem{langsung melompat kembali ke titik awal} ujung lainnya \textbf{tanpa melayani request} di jalan pulang.
+        \end{block}
+        
+        \textbf{Mengapa C-SCAN lebih baik dari SCAN?}
+        \begin{itemize}
+            \item Pada SCAN biasa, ketika head berbalik dari ujung, area tersebut baru saja disapu (kemungkinan request barunya sedikit).
+            \item Area di ujung lain sudah menunggu sangat lama.
+        \end{itemize}
+
+        \column{0.48\textwidth}
+        \begin{tikzpicture}[scale=0.85, transform shape]
+            \draw[thick, ->] (0,0) -- (6,0) node[right] {\scriptsize Track};
+            \draw[thick] (0,-0.1) -- (0,0.1) node[above] {\scriptsize 0};
+            \draw[thick] (5,-0.1) -- (5,0.1) node[above] {\scriptsize 199};
+            
+            % C-SCAN path
+            \draw[blue, thick, ->] (1.5, -0.5) -- (5, -0.5) node[midway, below] {\scriptsize Sapu \& Layani};
+            \draw[red, thick, dashed, ->] (5, -1.2) -- (0, -1.2) node[midway, below] {\scriptsize Lompat Balik Cepat};
+            \draw[blue, thick, ->] (0, -1.9) -- (1.2, -1.9) node[midway, below] {\scriptsize Lanjut Sapu};
+        \end{tikzpicture}
+        \vspace{0.2cm}
+        \begin{itemize}
+            \item \tem{Kelebihan}: Memberikan waktu tunggu yang jauh lebih seragam bagi semua request.
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+%--- Slide 26: LOOK & C-LOOK ---
+\begin{frame}
+    \frametitle{5. LOOK dan C-LOOK}
+    \framesubtitle{Varian pintar dari SCAN}
+    \small
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{block}{Masalah SCAN/C-SCAN Murni}
+            Mereka selalu bergerak \tem{sampai ujung disk (track 0 atau ujung maksimal)}, bahkan jika tidak ada lagi request di arah tersebut. Ini membuang waktu.
+        \end{block}
+        
+        \textbf{Algoritma LOOK:}
+        \begin{itemize}
+            \item Varian SCAN. Head hanya bergerak sejauh \tem{request terakhir} di arah tersebut, lalu berbalik.
+        \end{itemize}
+
+        \column{0.48\textwidth}
+        \textbf{Algoritma C-LOOK:}
+        \begin{itemize}
+            \item Varian C-SCAN. Head menyapu satu arah, berhenti di request terjauh, lalu \tem{melompat balik ke request terendah} (bukan track 0).
+            \item Ini adalah algoritma yang \tem{paling sering diimplementasikan} di dunia nyata untuk HDD mekanis.
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+%--- Slide 27: Ringkasan Perbandingan ---
+\begin{frame}
+    \frametitle{Ringkasan Perbandingan Algoritma}
+    \framesubtitle{Mana yang terbaik?}
+    \small
+    \begin{table}[]
+        \centering
+        \scriptsize
+        \begin{tabular}{p{0.18\textwidth} p{0.35\textwidth} p{0.35\textwidth}}
+            \toprule
+            \textbf{Algoritma} & \textbf{Kelebihan Utama} & \textbf{Kelemahan Utama} \\
+            \midrule
+            \rowcolor{gray!10}
+            \textbf{FCFS} & Adil, sangat mudah diimplementasikan. & Sangat lambat, pergerakan head boros. \\
+            \textbf{SSTF} & Kinerja sangat baik untuk batch request. & Resiko \textit{starvation} tinggi bagi track jauh. \\
+            \rowcolor{gray!10}
+            \textbf{SCAN} & Kinerja baik, mencegah \textit{starvation}. & Tidak adil bagi area yang baru saja dilewati head. \\
+            \textbf{C-SCAN} & Waktu tunggu sangat seragam/adil. & Head tetap pergi ke ujung disk membuang waktu. \\
+            \rowcolor{gray!10}
+            \textbf{C-LOOK} & Efisien, seragam, tidak ke ujung disk. & Overhead komputasi mencari letak request ujung. \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+    
+    \vspace{0.2cm}
+    \begin{exampleblock}{Catatan untuk SSD}
+        SSD (Solid State Drive) \tem{tidak memiliki piringan berputar} atau lengan mekanis (tidak ada \textit{seek time}). OS biasanya menggunakan FCFS yang dimodifikasi, atau membiarkan *firmware* SSD mengatur penjadwalannya sendiri.
+    \end{exampleblock}
+\end{frame}
+
+%--- Slide 28: Checkpoint 3 ---
+\begin{frame}
+    \frametitle{Checkpoint 3: Disk Scheduling}
+    \framesubtitle{Cek pemahaman sebelum latihan}
     \small
     \begin{enumerate}
-        \item Mengapa kita tidak menyimpan semua data secara permanen di RAM saja?
-        \item Apa bedanya cara pengguna melihat file vs cara OS melihat file?
-        \item Apa isi dari sebuah direktori pada tingkatan teknis terbawah?
+        \item Apa dua komponen utama yang membuat operasi disk I/O lambat?
+        \item Mengapa algoritma SSTF bisa menyebabkan sebuah proses menunggu selamanya (\textit{starvation})?
+        \item Apa bedanya algoritma SCAN biasa dengan LOOK?
+        \item Mengapa algoritma penjadwalan pergerakan head (seperti C-SCAN) menjadi kurang relevan pada teknologi penyimpanan modern saat ini?
     \end{enumerate}
-    \vspace{0.5cm}
+    
+    \vspace{0.3cm}
     \begin{block}{Kunci Jawaban Singkat}
-        1. RAM bersifat volatile (hilang saat mati) dan kapasitasnya mahal/terbatas.\\
-        2. Pengguna melihat nama file (tingkat tinggi), OS melihat file sebagai \textit{array of bytes} yang dipetakan ke blok fisik disk lewat inode.\\
-        3. Daftar pemetaan antara "Nama File" ke "Nomor Inode".
+        \scriptsize
+        1. \textit{Seek time} (pergerakan lengan) dan \textit{Rotational latency} (putaran piringan).\\
+        2. Jika request baru selalu berdatangan di area dekat head, request di ujung disk tidak akan pernah dipilih.\\
+        3. SCAN berjalan mentok sampai ujung disk. LOOK hanya berjalan sejauh posisi request terjauh lalu berbalik.\\
+        4. Karena penggunaan \textbf{SSD (Solid State Drive)} yang murni elektronik tanpa lengan penggerak/piringan, sehingga tidak ada konsep fisik \textit{seek time}.
     \end{block}
 \end{frame}
 
-% 7. Penutup
-\begin{frame}[plain]
+
+%================================================
+% BAGIAN 4: LATIHAN SOAL
+%================================================
+\section{Latihan: Perhitungan Disk Scheduling}
+
+%--- Slide 29: Soal Latihan ---
+\begin{frame}
+    \frametitle{Soal Latihan}
+    \framesubtitle{Hitung total pergerakan head (dalam silinder)}
+    \small
+    \begin{block}{Skenario}
+        Sebuah disk drive memiliki \textbf{200 silinder}, dinomori dari \tem{0 hingga 199}.\\
+        Posisi \textit{head} disk saat ini berada di silinder \tem{53}.
+    \end{block}
+    
+    Antrean permintaan akses I/O (\textit{queue}) datang dengan urutan berikut:
+    \begin{center}
+        \Large \textbf{98, 183, 37, 122, 14, 124, 65, 67}
+    \end{center}
+    
+    \vspace{0.3cm}
+    \textbf{Tugas:}
+    Hitung \textbf{total jarak pergerakan \textit{head}} untuk algoritma berikut:
+    \begin{enumerate}
+        \item \textbf{FCFS} (First-Come, First-Serve)
+        \item \textbf{SSTF} (Shortest Seek Time First)
+        \item \textbf{SCAN} (Asumsi arah awal menuju silinder lebih besar / 199)
+        \item \textbf{C-SCAN} (Asumsi arah awal menuju silinder lebih besar / 199)
+    \end{enumerate}
+\end{frame}
+
+%--- Slide 30: Jawaban FCFS ---
+\begin{frame}
+    \frametitle{Jawaban: FCFS}
+    \framesubtitle{Sesuai urutan kedatangan}
+    \small
+    \textbf{Antrean:} 98, 183, 37, 122, 14, 124, 65, 67\\
+    \textbf{Posisi Awal:} 53
+    
+    \vspace{0.3cm}
+    \textbf{Jalur Pergerakan:}
+    53 $\rightarrow$ 98 $\rightarrow$ 183 $\rightarrow$ 37 $\rightarrow$ 122 $\rightarrow$ 14 $\rightarrow$ 124 $\rightarrow$ 65 $\rightarrow$ 67
+    
+    \vspace{0.3cm}
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \textbf{Perhitungan Jarak:}
+        \begin{itemize}
+            \item $|53 - 98| = 45$
+            \item $|98 - 183| = 85$
+            \item $|183 - 37| = 146$
+            \item $|37 - 122| = 85$
+            \item $|122 - 14| = 108$
+        \end{itemize}
+        
+        \column{0.48\textwidth}
+        \textbf{Lanjutan:}
+        \begin{itemize}
+            \item $|14 - 124| = 110$
+            \item $|124 - 65| = 59$
+            \item $|65 - 67| = 2$
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        \begin{exampleblock}{Total Pergerakan}
+            \textbf{640 silinder}
+        \end{exampleblock}
+    \end{columns}
+\end{frame}
+
+%--- Slide 31: Jawaban SSTF ---
+\begin{frame}
+    \frametitle{Jawaban: SSTF}
+    \framesubtitle{Pilih yang terdekat dari posisi sekarang}
+    \small
+    \textbf{Antrean (Sorted):} 14, 37, 65, 67, 98, 122, 124, 183\\
+    \textbf{Posisi Awal:} 53
+    
+    \vspace{0.3cm}
+    \textbf{Jalur Pergerakan:}
+    53 $\rightarrow$ 65 $\rightarrow$ 67 $\rightarrow$ 37 $\rightarrow$ 14 $\rightarrow$ 98 $\rightarrow$ 122 $\rightarrow$ 124 $\rightarrow$ 183
+    
+    \vspace{0.3cm}
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \textbf{Perhitungan Jarak:}
+        \begin{itemize}
+            \item $|53 - 65| = 12$
+            \item $|65 - 67| = 2$
+            \item $|67 - 37| = 30$
+            \item $|37 - 14| = 23$
+            \item $|14 - 98| = 84$
+        \end{itemize}
+        
+        \column{0.48\textwidth}
+        \textbf{Lanjutan:}
+        \begin{itemize}
+            \item $|98 - 122| = 24$
+            \item $|122 - 124| = 2$
+            \item $|124 - 183| = 59$
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        \begin{exampleblock}{Total Pergerakan}
+            \textbf{236 silinder}
+        \end{exampleblock}
+    \end{columns}
+\end{frame}
+
+%--- Slide 32: Jawaban SCAN ---
+\begin{frame}
+    \frametitle{Jawaban: SCAN}
+    \framesubtitle{Maju ke ujung (199), lalu berbalik arah}
+    \small
+    \textbf{Antrean (Sorted):} 14, 37, 65, 67, 98, 122, 124, 183\\
+    \textbf{Posisi Awal:} 53 \quad \textbf{Arah:} Ke atas (menuju 199)
+    
+    \vspace{0.3cm}
+    \textbf{Jalur Pergerakan:}
+    53 $\rightarrow$ 65 $\rightarrow$ 67 $\rightarrow$ 98 $\rightarrow$ 122 $\rightarrow$ 124 $\rightarrow$ 183 $\rightarrow$ \tem{199} $\rightarrow$ 37 $\rightarrow$ 14
+    
+    \vspace{0.3cm}
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \textbf{Perhitungan Jarak:}
+        \begin{itemize}
+            \item Perjalanan naik (53 ke 199):\\
+                  $|199 - 53| = 146$
+            \item Perjalanan turun (199 ke 14):\\
+                  $|199 - 14| = 185$
+        \end{itemize}
+        
+        \column{0.48\textwidth}
+        \begin{exampleblock}{Cara Cepat}
+            Tujuan terjauh ke kanan: 199\\
+            Tujuan terjauh ke kiri: 14\\
+            Total = (199 - 53) + (199 - 14)\\
+            Total = 146 + 185 = \textbf{331 silinder}
+        \end{exampleblock}
+    \end{columns}
+\end{frame}
+
+%--- Slide 33: Jawaban C-SCAN ---
+\begin{frame}
+    \frametitle{Jawaban: C-SCAN}
+    \framesubtitle{Maju ke ujung (199), lompat ke awal (0), maju lagi}
+    \small
+    \textbf{Antrean (Sorted):} 14, 37, 65, 67, 98, 122, 124, 183\\
+    \textbf{Posisi Awal:} 53 \quad \textbf{Arah:} Ke atas (menuju 199)
+    
+    \vspace{0.3cm}
+    \textbf{Jalur Pergerakan:}
+    53 $\rightarrow$ ... $\rightarrow$ 183 $\rightarrow$ \tem{199} $\rightarrow$ \tem{0} $\rightarrow$ 14 $\rightarrow$ 37
+    
+    \vspace{0.3cm}
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \textbf{Perhitungan Jarak:}
+        \begin{itemize}
+            \item Perjalanan naik (53 ke 199):\\
+                  $|199 - 53| = 146$
+            \item Lompat ke awal (199 ke 0):\\
+                  $|199 - 0| = 199$
+            \item Lanjut naik (0 ke 37):\\
+                  $|37 - 0| = 37$
+        \end{itemize}
+        
+        \column{0.48\textwidth}
+        \begin{exampleblock}{Total Pergerakan}
+            Total = 146 + 199 + 37\\
+            \textbf{= 382 silinder}
+        \end{exampleblock}
+        \vspace{0.2cm}
+        \scriptsize \textit{Catatan: Beberapa literatur mengabaikan jarak lompatan (return time), namun dalam konteks OS umumnya jarak lompat silinder ini dihitung sebagai total seek movement.}
+    \end{columns}
+\end{frame}
+
+\begin{frame}
     \frametitle{Terima Kasih}
     \begin{center}
         \Huge \textbf{Ada Pertanyaan?}
@@ -626,13 +1056,6 @@ Change: 2026-05-04 15:30:00.000000000
         \vspace{0.8cm}
         \normalsize
         Sampai jumpa di pertemuan minggu depan!
-
-        \vspace{0.8cm}
-        \small
-        \textit{``Kutipan inspiratif (opsional).''} \\
-        \vspace{0.1cm}
-        --- Nama Tokoh
     \end{center}
 \end{frame}
-
 \end{document}
