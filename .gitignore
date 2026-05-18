@@ -13,6 +13,7 @@ node_modules/
 3_Tugas/quiz*
 quiz_prauts/
 soal_uts
+UAS/
 
 # LaTeX build artifacts
 *.aux
