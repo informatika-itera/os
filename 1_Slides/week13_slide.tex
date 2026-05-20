@@ -163,22 +163,22 @@
     \frametitle{Numeric Notation (Mode Oktal)}
     \framesubtitle{Cara cepat menulis permission dengan angka}
 
-    \begin{center}
-        \begin{tabular}{ccl}
-            \toprule
-            \textbf{Angka} & \textbf{Biner} & \textbf{Izin} \\
-            \midrule
-            7 & 111 & rwx \\
-            6 & 110 & rw- \\
-            5 & 101 & r-x \\
-            4 & 100 & r-- \\
-            0 & 000 & --- \\
-            \bottomrule
-        \end{tabular}
-    \end{center}
-
-    \vspace{0.3cm}
     \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{center}
+            \begin{tabular}{ccl}
+                \toprule
+                \textbf{Angka} & \textbf{Biner} & \textbf{Izin} \\
+                \midrule
+                7 & 111 & rwx \\
+                6 & 110 & rw- \\
+                5 & 101 & r-x \\
+                4 & 100 & r-- \\
+                0 & 000 & --- \\
+                \bottomrule
+            \end{tabular}
+        \end{center}
+
         \column{0.48\textwidth}
         \begin{block}{Rumus}
             \small
@@ -188,7 +188,7 @@
             Other: 4 (r--)
         \end{block}
 
-        \column{0.48\textwidth}
+        \vspace{0.2cm}
         \begin{exampleblock}{Contoh Umum}
             \small
             \begin{itemize}
@@ -380,10 +380,10 @@
     \end{exampleblock}
 \end{frame}
 
-%--- Slide 3: Mekanisme Proteksi OS ---
+%--- Slide 3a: Mekanisme Proteksi OS (1) ---
 \begin{frame}[shrink=5]
-    \frametitle{Mekanisme Proteksi oleh OS}
-    \framesubtitle{Bagaimana OS melindungi diri dari malware}
+    \frametitle{Mekanisme Proteksi oleh OS (1/2)}
+    \framesubtitle{User Mode / Kernel Mode \& Address Space Isolation}
 
     \begin{columns}[T]
         \column{0.48\textwidth}
@@ -396,7 +396,7 @@
             \end{itemize}
         \end{block}
 
-        \vspace{0.1cm}
+        \column{0.48\textwidth}
         \begin{block}{2. Address Space Isolation}
             \small
             \begin{itemize}
@@ -405,7 +405,15 @@
                 \item Mencegah malware ``ngintip'' data program lain.
             \end{itemize}
         \end{block}
+    \end{columns}
+\end{frame}
 
+%--- Slide 3b: Mekanisme Proteksi OS (2) ---
+\begin{frame}[shrink=5]
+    \frametitle{Mekanisme Proteksi oleh OS (2/2)}
+    \framesubtitle{ASLR, NX Bit, \& Mandatory Access Control}
+
+    \begin{columns}[T]
         \column{0.48\textwidth}
         \begin{block}{3. ASLR \& NX Bit}
             \small
@@ -422,7 +430,7 @@
             \end{itemize}
         \end{block}
 
-        \vspace{0.1cm}
+        \column{0.48\textwidth}
         \begin{block}{4. Mandatory Access Control}
             \small
             \textbf{SELinux / AppArmor}: kebijakan keamanan yang membatasi program bahkan oleh root.
@@ -518,30 +526,13 @@
 
     \vspace{-0.3cm}
     \begin{center}
-        \begin{tikzpicture}[scale=0.65, transform shape]
-            % VM side
-            \node[draw, fill=blue!15, rounded corners=3pt, minimum width=5cm, minimum height=0.5cm] (vm_host) at (-4, 2.5) {{\small Host OS}};
-            \node[draw, fill=orange!25, rounded corners=3pt, minimum width=4.5cm, minimum height=0.4cm] (vm_hyper) at (-4, 1.7) {{\small Hypervisor}};
-            \node[draw, fill=green!20, rounded corners=3pt, minimum width=2.5cm, minimum height=0.6cm] (vm1_os) at (-5.5, 0.5) {{\small Guest OS}};
-            \node[draw, fill=green!20, rounded corners=3pt, minimum width=2.5cm, minimum height=0.6cm] (vm2_os) at (-2.5, 0.5) {{\small Guest OS}};
-            \node[draw, fill=yellow!25, rounded corners=3pt, minimum width=1.8cm, minimum height=0.3cm] (vm1_app) at (-5.5, -0.3) {{\tiny App A}};
-            \node[draw, fill=yellow!25, rounded corners=3pt, minimum width=1.8cm, minimum height=0.3cm] (vm2_app) at (-2.5, -0.3) {{\tiny App B}};
+        \includegraphics[width=0.9\textwidth, height=0.7\textheight, keepaspectratio]
+            {figures/13_vm.png}
+    \end{center}
 
-            \node[align=center] at (-4, -1.3) {{\bf VM}: Masing-masing\\punya OS sendiri.\\Berat, boot lama.};
-
-            % Container side
-            \node[draw, fill=blue!15, rounded corners=3pt, minimum width=5cm, minimum height=0.5cm] (cont_os) at (4, 2.5) {{\small Host OS}};
-            \node[draw, fill=red!15, rounded corners=3pt, minimum width=5cm, minimum height=0.4cm] (cont_engine) at (4, 1.7) {{\small Container Engine}};
-            \node[draw, fill=yellow!25, rounded corners=3pt, minimum width=2.5cm, minimum height=0.6cm] (c1) at (2.5, 0.5) {{\small Container 1}};
-            \node[draw, fill=yellow!25, rounded corners=3pt, minimum width=2.5cm, minimum height=0.6cm] (c2) at (5.5, 0.5) {{\small Container 2}};
-            \node[draw, fill=green!10, rounded corners=3pt, minimum width=2cm, minimum height=0.3cm] (c1_libs) at (2.5, -0.3) {{\tiny Lib v1}};
-            \node[draw, fill=green!10, rounded corners=3pt, minimum width=2cm, minimum height=0.3cm] (c2_libs) at (5.5, -0.3) {{\tiny Lib v2}};
-
-            \node[align=center] at (4, -1.3) {{\bf Container}: Pakai kernel\\host bersama. Ringan,\\start cepat.};
-
-            \node[align=center, font=\bf] at (-4, 3.2) {Virtual Machine};
-            \node[align=center, font=\bf] at (4, 3.2) {Container};
-        \end{tikzpicture}
+    \vspace{0.1cm}
+    \begin{center}
+        \tiny\textcolor{gray}{Sumber: NetApp -- containers-vs-vms}
     \end{center}
 \end{frame}
 
@@ -757,13 +748,13 @@ CMD ["nginx", "-g", "daemon off;"]
     \end{columns}
 \end{frame}
 
-%--- Slide 2: RAID 0 ---
+%--- Slide 2a: RAID 0 -- Cara Kerja ---
 \begin{frame}[shrink=5]
-    \frametitle{RAID 0: Striping}
-    \framesubtitle{Kecepatan tanpa redundansi}
+    \frametitle{RAID 0: Striping (1/2)}
+    \framesubtitle{Data dipecah dan disebar ke beberapa disk}
 
     \begin{columns}[T]
-        \column{0.48\textwidth}
+        \column{0.40\textwidth}
         \begin{block}{Cara Kerja}
             \small
             \begin{itemize}
@@ -774,9 +765,9 @@ CMD ["nginx", "-g", "daemon off;"]
             \end{itemize}
         \end{block}
 
-        \vspace{0.1cm}
+        \column{0.56\textwidth}
         \begin{center}
-            \begin{tikzpicture}[scale=0.52, transform shape]
+            \begin{tikzpicture}[scale=0.85, transform shape]
                 % Disk 1
                 \draw[very thick] (0,0) rectangle (2.8, -3.5);
                 \node[font=\bfseries\small] at (1.4, 0.3) {Disk 1};
@@ -802,7 +793,15 @@ CMD ["nginx", "-g", "daemon off;"]
                 \node[font=\footnotesize, blue!60] at (3.3, -3.25) {stripe};
             \end{tikzpicture}
         \end{center}
+    \end{columns}
+\end{frame}
 
+%--- Slide 2b: RAID 0 -- Risiko ---
+\begin{frame}[shrink=5]
+    \frametitle{RAID 0: Striping (2/2)}
+    \framesubtitle{Risiko dan kapan sebaiknya digunakan}
+
+    \begin{columns}[T]
         \column{0.48\textwidth}
         \begin{alertblock}{Risiko}
             \small
@@ -813,7 +812,7 @@ CMD ["nginx", "-g", "daemon off;"]
             \end{itemize}
         \end{alertblock}
 
-        \vspace{0.1cm}
+        \column{0.48\textwidth}
         \begin{block}{Kapan Dipakai?}
             \small
             \begin{itemize}
@@ -824,13 +823,13 @@ CMD ["nginx", "-g", "daemon off;"]
     \end{columns}
 \end{frame}
 
-%--- Slide 3: RAID 1 ---
+%--- Slide 3a: RAID 1 -- Cara Kerja ---
 \begin{frame}[shrink=5]
-    \frametitle{RAID 1: Mirroring}
-    \framesubtitle{Aman tapi boros}
+    \frametitle{RAID 1: Mirroring (1/2)}
+    \framesubtitle{Data ditulis identik ke dua disk}
 
     \begin{columns}[T]
-        \column{0.48\textwidth}
+        \column{0.40\textwidth}
         \begin{block}{Cara Kerja}
             \small
             \begin{itemize}
@@ -841,24 +840,53 @@ CMD ["nginx", "-g", "daemon off;"]
             \end{itemize}
         \end{block}
 
-        \vspace{0.15cm}
-        \begin{block}{Kapan Dipakai?}
-            \footnotesize
-            \begin{itemize}
-                \item Sistem kritis (OS, database log).
-                \item Data yang tidak boleh hilang.
-            \end{itemize}
-        \end{block}
+        \column{0.56\textwidth}
+        \begin{center}
+            \begin{tikzpicture}[scale=0.85, transform shape]
+                % Disk 1
+                \draw[very thick] (0,0) rectangle (3.2, -3.2);
+                \node[font=\bfseries\small] at (1.6, 0.3) {Disk 1};
+                \draw[fill=blue!18, draw=blue!50!black] (0.2,-0.5) rectangle (1.5, -1.2);
+                \node[font=\small\bfseries] at (0.85, -0.85) {B};
+                \draw[fill=blue!18, draw=blue!50!black] (1.7,-0.5) rectangle (3.0, -1.2);
+                \node[font=\small\bfseries] at (2.35, -0.85) {U};
+                \draw[fill=blue!18, draw=blue!50!black] (0.2,-1.4) rectangle (1.5, -2.1);
+                \node[font=\small\bfseries] at (0.85, -1.75) {K};
+                \draw[fill=blue!18, draw=blue!50!black] (1.7,-1.4) rectangle (3.0, -2.1);
+                \node[font=\small\bfseries] at (2.35, -1.75) {U};
 
+                % Arrows mirror
+                \draw[<->, thick, blue!60] (3.4, -0.85) -- (4.5, -0.85);
+                \draw[<->, thick, blue!60] (4.5, -1.75) -- (3.4, -1.75);
+                \node[font=\footnotesize, blue!60] at (3.95, -0.55) {mirror};
+                \node[font=\footnotesize, blue!60] at (3.95, -2.1) {mirror};
+
+                % Disk 2
+                \draw[very thick] (4.8,0) rectangle (8.0, -3.2);
+                \node[font=\bfseries\small] at (6.4, 0.3) {Disk 2};
+                \draw[fill=blue!18, draw=blue!50!black] (5.0,-0.5) rectangle (6.3, -1.2);
+                \node[font=\small\bfseries] at (5.65, -0.85) {B};
+                \draw[fill=blue!18, draw=blue!50!black] (6.5,-0.5) rectangle (7.8, -1.2);
+                \node[font=\small\bfseries] at (7.15, -0.85) {U};
+                \draw[fill=blue!18, draw=blue!50!black] (5.0,-1.4) rectangle (6.3, -2.1);
+                \node[font=\small\bfseries] at (5.65, -1.75) {K};
+                \draw[fill=blue!18, draw=blue!50!black] (6.5,-1.4) rectangle (7.8, -2.1);
+                \node[font=\small\bfseries] at (7.15, -1.75) {U};
+
+                % Label identik
+                \node[font=\footnotesize, green!50!black, align=center] at (3.95, -2.8) {{\bf Identik!}};
+            \end{tikzpicture}
+        \end{center}
+    \end{columns}
+\end{frame}
+
+%--- Slide 3b: RAID 1 -- Kekurangan ---
+\begin{frame}[shrink=5]
+    \frametitle{RAID 1: Mirroring (2/2)}
+    \framesubtitle{Kekurangan dan kapan sebaiknya digunakan}
+
+    \begin{columns}[T]
         \column{0.48\textwidth}
-        \begin{exampleblock}{Ilustrasi: File ``BUKU''}
-            \small
-            \texttt{Disk 1: B U K U} \\
-            \texttt{Disk 2: B U K U} \\
-            \texttt{Identik!}
-        \end{exampleblock}
-
-        \vspace{0.15cm}
         \begin{alertblock}{Kekurangan}
             \small
             \begin{itemize}
@@ -866,17 +894,26 @@ CMD ["nginx", "-g", "daemon off;"]
                 \item 2 TB (2 disk $\times$ 1 TB) = hanya 1 TB yang terpakai.
             \end{itemize}
         \end{alertblock}
+
+        \column{0.48\textwidth}
+        \begin{block}{Kapan Dipakai?}
+            \small
+            \begin{itemize}
+                \item Sistem kritis (OS, database log).
+                \item Data yang tidak boleh hilang.
+            \end{itemize}
+        \end{block}
     \end{columns}
 \end{frame}
 
-%--- Slide 4: RAID 5 & 6 ---
+%--- Slide 4a: RAID 5 -- Cara Kerja ---
 \begin{frame}[shrink=5]
-    \frametitle{RAID 5 \& 6: Parity}
-    \framesubtitle{Keseimbangan antara performa, kapasitas, dan keamanan}
+    \frametitle{RAID 5: Parity (1/3)}
+    \framesubtitle{Data + parity disebar ke semua disk}
 
     \begin{columns}[T]
-        \column{0.48\textwidth}
-        \begin{block}{RAID 5}
+        \column{0.40\textwidth}
+        \begin{block}{Cara Kerja RAID 5}
             \small
             \begin{itemize}
                 \item Data + \textit{parity} (informasi pemulihan) disebar ke semua disk.
@@ -887,8 +924,62 @@ CMD ["nginx", "-g", "daemon off;"]
             \end{itemize}
         \end{block}
 
-        \column{0.48\textwidth}
-        \begin{block}{RAID 6}
+        \column{0.56\textwidth}
+        \begin{center}
+            \begin{tikzpicture}[scale=0.85, transform shape]
+                % Legend
+                \node[fill=blue!18, draw=blue!50!black, minimum width=0.4cm, minimum height=0.25cm] at (0.3, 0.8) {};
+                \node[font=\tiny, anchor=west] at (0.8, 0.8) {Data};
+                \node[fill=orange!25, draw=orange!60!black, minimum width=0.4cm, minimum height=0.25cm] at (2.0, 0.8) {};
+                \node[font=\tiny, anchor=west] at (2.5, 0.8) {Parity};
+
+                % Disk 1
+                \draw[very thick] (0,0) rectangle (2.5, -3.2);
+                \node[font=\bfseries\small] at (1.25, 0.3) {Disk 1};
+                \draw[fill=blue!18, draw=blue!50!black] (0.15,-0.4) rectangle (2.35, -1.0);
+                \node[font=\small\bfseries] at (1.25, -0.7) {A1};
+                \draw[fill=blue!18, draw=blue!50!black] (0.15,-1.15) rectangle (2.35, -1.75);
+                \node[font=\small\bfseries] at (1.25, -1.45) {B1};
+                \draw[fill=orange!25, draw=orange!60!black] (0.15,-1.9) rectangle (2.35, -2.5);
+                \node[font=\small\bfseries] at (1.25, -2.2) {P(C)};
+
+                % Disk 2
+                \draw[very thick] (2.8,0) rectangle (5.3, -3.2);
+                \node[font=\bfseries\small] at (4.05, 0.3) {Disk 2};
+                \draw[fill=blue!18, draw=blue!50!black] (2.95,-0.4) rectangle (5.15, -1.0);
+                \node[font=\small\bfseries] at (4.05, -0.7) {A2};
+                \draw[fill=orange!25, draw=orange!60!black] (2.95,-1.15) rectangle (5.15, -1.75);
+                \node[font=\small\bfseries] at (4.05, -1.45) {P(B)};
+                \draw[fill=blue!18, draw=blue!50!black] (2.95,-1.9) rectangle (5.15, -2.5);
+                \node[font=\small\bfseries] at (4.05, -2.2) {C1};
+
+                % Disk 3
+                \draw[very thick] (5.6,0) rectangle (8.1, -3.2);
+                \node[font=\bfseries\small] at (6.85, 0.3) {Disk 3};
+                \draw[fill=orange!25, draw=orange!60!black] (5.75,-0.4) rectangle (7.95, -1.0);
+                \node[font=\small\bfseries] at (6.85, -0.7) {P(A)};
+                \draw[fill=blue!18, draw=blue!50!black] (5.75,-1.15) rectangle (7.95, -1.75);
+                \node[font=\small\bfseries] at (6.85, -1.45) {B2};
+                \draw[fill=blue!18, draw=blue!50!black] (5.75,-1.9) rectangle (7.95, -2.5);
+                \node[font=\small\bfseries] at (6.85, -2.2) {C2};
+
+                % Parity label per stripe
+                \node[font=\tiny, blue!60] at (1.25, -1.15) {---};
+                \node[font=\tiny, blue!60] at (6.85, -1.15) {---};
+                \node[font=\tiny, orange!60] at (4.05, -2.65) {stripe};
+            \end{tikzpicture}
+        \end{center}
+    \end{columns}
+\end{frame}
+
+%--- Slide 4b: RAID 6 -- Cara Kerja ---
+\begin{frame}[shrink=5]
+    \frametitle{RAID 6: Parity Ganda (2/3)}
+    \framesubtitle{Dua parity (P + Q) untuk redundansi ganda}
+
+    \begin{columns}[T]
+        \column{0.40\textwidth}
+        \begin{block}{Cara Kerja RAID 6}
             \small
             \begin{itemize}
                 \item Dua parity (P + Q) -- redundansi ganda.
@@ -897,13 +988,90 @@ CMD ["nginx", "-g", "daemon off;"]
                 \item Cocok untuk disk besar dengan rebuild time lama.
             \end{itemize}
         \end{block}
-    \end{columns}
 
-    \vspace{0.2cm}
-    \begin{exampleblock}{Analogi: Permainan Teka-Teki}
-        \small
-        Parity seperti teka-teki silang: jika satu kotak hilang, kita masih bisa menebak isinya dari petunjuk baris dan kolom yang lain. RAID 6 memberi dua petunjuk, jadi dua kotak hilang pun masih tertebak.
-    \end{exampleblock}
+        \column{0.56\textwidth}
+        \begin{center}
+            \begin{tikzpicture}[scale=0.72, transform shape]
+                % Legend
+                \node[fill=blue!18, draw=blue!50!black, minimum width=0.4cm, minimum height=0.25cm] at (0.3, 0.8) {};
+                \node[font=\tiny, anchor=west] at (0.8, 0.8) {Data};
+                \node[fill=orange!25, draw=orange!60!black, minimum width=0.4cm, minimum height=0.25cm] at (2.0, 0.8) {};
+                \node[font=\tiny, anchor=west] at (2.5, 0.8) {P};
+                \node[fill=red!20, draw=red!60!black, minimum width=0.4cm, minimum height=0.25cm] at (3.5, 0.8) {};
+                \node[font=\tiny, anchor=west] at (4.0, 0.8) {Q};
+
+                % Disk 1
+                \draw[very thick] (0,0) rectangle (2.2, -3.2);
+                \node[font=\bfseries\small] at (1.1, 0.3) {Disk 1};
+                \draw[fill=blue!18, draw=blue!50!black] (0.15,-0.4) rectangle (2.05, -1.0);
+                \node[font=\small\bfseries] at (1.1, -0.7) {A1};
+                \draw[fill=blue!18, draw=blue!50!black] (0.15,-1.15) rectangle (2.05, -1.75);
+                \node[font=\small\bfseries] at (1.1, -1.45) {B1};
+                \draw[fill=orange!25, draw=orange!60!black] (0.15,-1.9) rectangle (2.05, -2.5);
+                \node[font=\small\bfseries] at (1.1, -2.2) {P(C)};
+
+                % Disk 2
+                \draw[very thick] (2.5,0) rectangle (4.7, -3.2);
+                \node[font=\bfseries\small] at (3.6, 0.3) {Disk 2};
+                \draw[fill=blue!18, draw=blue!50!black] (2.65,-0.4) rectangle (4.55, -1.0);
+                \node[font=\small\bfseries] at (3.6, -0.7) {A2};
+                \draw[fill=orange!25, draw=orange!60!black] (2.65,-1.15) rectangle (4.55, -1.75);
+                \node[font=\small\bfseries] at (3.6, -1.45) {P(B)};
+                \draw[fill=red!20, draw=red!60!black] (2.65,-1.9) rectangle (4.55, -2.5);
+                \node[font=\small\bfseries] at (3.6, -2.2) {Q(C)};
+
+                % Disk 3
+                \draw[very thick] (5.0,0) rectangle (7.2, -3.2);
+                \node[font=\bfseries\small] at (6.1, 0.3) {Disk 3};
+                \draw[fill=orange!25, draw=orange!60!black] (5.15,-0.4) rectangle (7.05, -1.0);
+                \node[font=\small\bfseries] at (6.1, -0.7) {P(A)};
+                \draw[fill=red!20, draw=red!60!black] (5.15,-1.15) rectangle (7.05, -1.75);
+                \node[font=\small\bfseries] at (6.1, -1.45) {Q(B)};
+                \draw[fill=blue!18, draw=blue!50!black] (5.15,-1.9) rectangle (7.05, -2.5);
+                \node[font=\small\bfseries] at (6.1, -2.2) {C1};
+
+                % Disk 4
+                \draw[very thick] (7.5,0) rectangle (9.7, -3.2);
+                \node[font=\bfseries\small] at (8.6, 0.3) {Disk 4};
+                \draw[fill=red!20, draw=red!60!black] (7.65,-0.4) rectangle (9.55, -1.0);
+                \node[font=\small\bfseries] at (8.6, -0.7) {Q(A)};
+                \draw[fill=blue!18, draw=blue!50!black] (7.65,-1.15) rectangle (9.55, -1.75);
+                \node[font=\small\bfseries] at (8.6, -1.45) {B2};
+                \draw[fill=blue!18, draw=blue!50!black] (7.65,-1.9) rectangle (9.55, -2.5);
+                \node[font=\small\bfseries] at (8.6, -2.2) {C2};
+            \end{tikzpicture}
+        \end{center}
+    \end{columns}
+\end{frame}
+
+%--- Slide 4c: RAID 5 & 6 -- Analogi ---
+\begin{frame}[shrink=5]
+    \frametitle{RAID 5 \& 6: Analogi Parity (3/3)}
+    \framesubtitle{Bagaimana parity bekerja?}
+
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{exampleblock}{Analogi: Permainan Teka-Teki}
+            \small
+            \begin{itemize}
+                \item Parity seperti \textbf{petunjuk} dalam teka-teki silang.
+                \item Jika satu kotak hilang, kita masih bisa menebak isinya dari petunjuk baris dan kolom yang lain.
+                \item \textbf{RAID 5} = satu petunjuk -- satu kotak hilang masih tertebak.
+                \item \textbf{RAID 6} = dua petunjuk -- dua kotak hilang pun masih tertebak.
+            \end{itemize}
+        \end{exampleblock}
+
+        \column{0.48\textwidth}
+        \begin{block}{Mengapa Parity Penting?}
+            \small
+            \begin{itemize}
+                \item RAID 5 hanya butuh \textbf{1 disk ekstra} untuk mengamankan \textbf{banyak disk}.
+                \item RAID 6 butuh \textbf{2 disk ekstra} tapi tahan 2 kerusakan.
+                \item Lebih efisien dari RAID 1 (50\%) untuk data besar.
+                \item Kekurangan: write lebih lambat karena harus hitung parity.
+            \end{itemize}
+        \end{block}
+    \end{columns}
 \end{frame}
 
 %--- Slide 5: Perbandingan ---
