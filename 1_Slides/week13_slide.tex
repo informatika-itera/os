@@ -52,7 +52,7 @@
 \begin{document}
 
 % 1. Title frame
-\begin{frame}[shrink=10]
+\begin{frame}
     \titlepage
 \end{frame}
 
@@ -201,6 +201,53 @@
     \end{columns}
 \end{frame}
 
+%--- Slide 4: Symbolic Notation ---
+\begin{frame}[shrink=5]
+    \frametitle{Symbolic Notation: chmod [who] [+/-/=] [perms]}
+    \framesubtitle{Mengubah permission dengan simbol, bukan angka}
+
+    \begin{columns}[T]
+        \column{0.52\textwidth}
+        \begin{block}{Format Umum}
+            \small
+            \texttt{chmod [who][+/-/=][permissions] file}
+            \vspace{0.1cm}
+            \begin{itemize}
+                \item \textbf{Who}: \texttt{u} (user), \texttt{g} (group), \texttt{o} (other), \texttt{a} (all).
+                \item \textbf{Operator}: \texttt{+} tambah, \texttt{-} hapus, \texttt{=} set persis.
+                \item \textbf{Perms}: \texttt{r}, \texttt{w}, \texttt{x}.
+            \end{itemize}
+        \end{block}
+
+        \vspace{0.15cm}
+        \begin{block}{Kombinasi}
+            \footnotesize
+            \begin{itemize}
+                \item \texttt{chmod u+x file} -- tambah execute untuk user.
+                \item \texttt{chmod go-rw file} -- hapus read+write untuk group \& other.
+                \item \texttt{chmod a=r file} -- semua cuma bisa baca.
+            \end{itemize}
+        \end{block}
+
+        \column{0.44\textwidth}
+        \begin{exampleblock}{Contoh Langkah demi Langkah}
+            \footnotesize
+            Awal: \texttt{-rwxr-xr--} (mode 754)
+            \vspace{0.1cm}
+            \begin{enumerate}
+                \item \texttt{chmod u-w} \\[-2pt]
+                \texttt{-r-xr-xr--} $\leftarrow$ user kehilangan write
+                \vspace{0.08cm}
+                \item \texttt{chmod 755} \\[-2pt]
+                \texttt{-rwxr-xr-x} $\leftarrow$ other dapat execute
+                \vspace{0.08cm}
+                \item \texttt{chmod 644} \\[-2pt]
+                \texttt{-rw-r--r--} $\leftarrow$ user \& group kehilangan execute
+            \end{enumerate}
+        \end{exampleblock}
+    \end{columns}
+\end{frame}
+
 %--- Slide 4: Special Bits ---
 \begin{frame}
     \frametitle{Special Bits: Setuid, Setgid, Sticky Bit}
@@ -236,7 +283,7 @@
 \end{frame}
 
 %--- Checkpoint 1 ---
-\begin{frame}
+\begin{frame}[shrink=3]
     \frametitle{Checkpoint 1}
     \framesubtitle{Hak Akses -- Cek pemahaman sebelum lanjut}
     \small
@@ -244,13 +291,20 @@
         \item Apa arti \texttt{chmod 600 rahasia.txt}?
         \item Bedanya SUID dan SGID?
         \item Kenapa \texttt{/tmp} pakai sticky bit?
+        \item Konversi \texttt{-rwxr-xr--} ke notasi oktal (3 digit).
+        \item Permission akhir setelah \texttt{chmod 755 file.txt}?
+        \item Permission akhir setelah \texttt{chmod u-w file.txt} (awal \texttt{-rwxr-xr--})?
     \end{enumerate}
-    \vspace{0.3cm}
+    \vspace{0.2cm}
     \begin{block}{Jawaban Singkat}
+        \footnotesize
         \begin{enumerate}
-            \item Owner bisa baca+tulis; group dan others tidak bisa apa-apa.
+            \item Owner bisa baca+tulis; group \& others tidak bisa apa-apa.
             \item SUID = pakai privilege owner file; SGID = pakai privilege grup file.
             \item Biar semua user bisa buat file sementara, tapi tidak bisa hapus file punya orang lain.
+            \item 754 (rwx=7, r-x=5, r--=4).
+            \item \texttt{-rwxr-xr-x} (owner: rwx, group: r-x, other: r-x).
+            \item \texttt{-r-xr-xr--} (owner kehilangan write).
         \end{enumerate}
     \end{block}
 \end{frame}
@@ -268,7 +322,7 @@
     \begin{columns}[T]
         \column{0.55\textwidth}
         \begin{alertblock}{Jenis Malware}
-            \small
+            \footnotesize
             \begin{itemize}
                 \item \textbf{Virus} -- Menempel di file lain dan menyebar saat file dijalankan.
                 \item \textbf{Worm} -- Menyebar sendiri melalui jaringan tanpa perlu file induk.
@@ -280,7 +334,7 @@
 
         \column{0.40\textwidth}
         \begin{exampleblock}{Analogi}
-            \small
+            \footnotesize
             \begin{itemize}
                 \item Virus = ``flu'' komputer -- nempel di file.
                 \item Worm = pencuri yang masuk lewat celah pagar dan ngajak teman-temannya.
@@ -298,7 +352,7 @@
 
     \begin{columns}[T]
         \column{0.55\textwidth}
-        \small
+        \footnotesize
         \begin{itemize}
             \item \textbf{Email phishing} -- Lampiran atau link berbahaya.
             \item \textbf{Download software} -- Program bajakan atau dari sumber tidak resmi.
@@ -309,7 +363,7 @@
 
         \column{0.40\textwidth}
         \begin{block}{Siapa Targetnya?}
-            \small
+            \footnotesize
             \begin{itemize}
                 \item Pengguna biasa: ransomware, phishing.
                 \item Server: DDoS, backdoor.
@@ -319,9 +373,9 @@
         \end{block}
     \end{columns}
 
-    \vspace{0.2cm}
+    \vspace{0.15cm}
     \begin{exampleblock}{Pesan Penting}
-        \small
+        \footnotesize
         Sebagian besar serangan sukses karena \textbf{human error}, bukan karena OS lemah.
     \end{exampleblock}
 \end{frame}
@@ -704,12 +758,12 @@ CMD ["nginx", "-g", "daemon off;"]
 \end{frame}
 
 %--- Slide 2: RAID 0 ---
-\begin{frame}[shrink=10]
+\begin{frame}[shrink=5]
     \frametitle{RAID 0: Striping}
     \framesubtitle{Kecepatan tanpa redundansi}
 
     \begin{columns}[T]
-        \column{0.50\textwidth}
+        \column{0.48\textwidth}
         \begin{block}{Cara Kerja}
             \small
             \begin{itemize}
@@ -720,15 +774,36 @@ CMD ["nginx", "-g", "daemon off;"]
             \end{itemize}
         \end{block}
 
-        \vspace{0.15cm}
-        \begin{exampleblock}{Ilustrasi: File ``BUKU''}
-            \small
-            \texttt{Disk 1: B K U} \\
-            \texttt{Disk 2: U U $\emptyset$} \\
-            \texttt{Pembacaan paralel: lebih cepat!}
-        \end{exampleblock}
+        \vspace{0.1cm}
+        \begin{center}
+            \begin{tikzpicture}[scale=0.52, transform shape]
+                % Disk 1
+                \draw[very thick] (0,0) rectangle (2.8, -3.5);
+                \node[font=\bfseries\small] at (1.4, 0.3) {Disk 1};
+                \draw[fill=blue!18, draw=blue!50!black] (0.15,-0.5) rectangle (2.65, -1.2);
+                \node[font=\small\bfseries] at (1.4, -0.85) {A1};
+                \draw[fill=blue!18, draw=blue!50!black] (0.15,-1.35) rectangle (2.65, -2.05);
+                \node[font=\small\bfseries] at (1.4, -1.7) {A3};
+                \draw[fill=blue!18, draw=blue!50!black] (0.15,-2.2) rectangle (2.65, -2.9);
+                \node[font=\small\bfseries] at (1.4, -2.55) {A5};
+                % Disk 2
+                \draw[very thick] (3.8,0) rectangle (6.6, -3.5);
+                \node[font=\bfseries\small] at (5.2, 0.3) {Disk 2};
+                \draw[fill=blue!18, draw=blue!50!black] (3.95,-0.5) rectangle (6.45, -1.2);
+                \node[font=\small\bfseries] at (5.2, -0.85) {A2};
+                \draw[fill=blue!18, draw=blue!50!black] (3.95,-1.35) rectangle (6.45, -2.05);
+                \node[font=\small\bfseries] at (5.2, -1.7) {A4};
+                \draw[fill=blue!18, draw=blue!50!black] (3.95,-2.2) rectangle (6.45, -2.9);
+                \node[font=\small\bfseries] at (5.2, -2.55) {A6};
+                % Arrows
+                \draw[->, thick, blue!60] (2.9, -0.85) -- (3.7, -0.85);
+                \draw[->, thick, blue!60] (3.7, -1.7) -- (2.9, -1.7);
+                \draw[->, thick, blue!60] (2.9, -2.55) -- (3.7, -2.55);
+                \node[font=\footnotesize, blue!60] at (3.3, -3.25) {stripe};
+            \end{tikzpicture}
+        \end{center}
 
-        \column{0.45\textwidth}
+        \column{0.48\textwidth}
         \begin{alertblock}{Risiko}
             \small
             \begin{itemize}
@@ -738,7 +813,7 @@ CMD ["nginx", "-g", "daemon off;"]
             \end{itemize}
         \end{alertblock}
 
-        \vspace{0.15cm}
+        \vspace{0.1cm}
         \begin{block}{Kapan Dipakai?}
             \small
             \begin{itemize}
@@ -750,12 +825,12 @@ CMD ["nginx", "-g", "daemon off;"]
 \end{frame}
 
 %--- Slide 3: RAID 1 ---
-\begin{frame}[shrink=10]
+\begin{frame}[shrink=5]
     \frametitle{RAID 1: Mirroring}
     \framesubtitle{Aman tapi boros}
 
     \begin{columns}[T]
-        \column{0.50\textwidth}
+        \column{0.48\textwidth}
         \begin{block}{Cara Kerja}
             \small
             \begin{itemize}
@@ -766,7 +841,16 @@ CMD ["nginx", "-g", "daemon off;"]
             \end{itemize}
         \end{block}
 
-        \column{0.45\textwidth}
+        \vspace{0.15cm}
+        \begin{block}{Kapan Dipakai?}
+            \footnotesize
+            \begin{itemize}
+                \item Sistem kritis (OS, database log).
+                \item Data yang tidak boleh hilang.
+            \end{itemize}
+        \end{block}
+
+        \column{0.48\textwidth}
         \begin{exampleblock}{Ilustrasi: File ``BUKU''}
             \small
             \texttt{Disk 1: B U K U} \\
@@ -782,15 +866,6 @@ CMD ["nginx", "-g", "daemon off;"]
                 \item 2 TB (2 disk $\times$ 1 TB) = hanya 1 TB yang terpakai.
             \end{itemize}
         \end{alertblock}
-
-        \vspace{0.15cm}
-        \begin{block}{Kapan Dipakai?}
-            \small
-            \begin{itemize}
-                \item Sistem kritis (OS, database log).
-                \item Data yang tidak boleh hilang.
-            \end{itemize}
-        \end{block}
     \end{columns}
 \end{frame}
 
@@ -836,13 +911,13 @@ CMD ["nginx", "-g", "daemon off;"]
     \frametitle{Perbandingan RAID Levels}
 
     \begin{center}
-        \small
-        \begin{tabular}{p{0.20\textwidth}p{0.17\textwidth}p{0.17\textwidth}p{0.17\textwidth}p{0.17\textwidth}}
+        \resizebox{\textwidth}{!}{
+        \begin{tabular}{p{0.18\textwidth}p{0.17\textwidth}p{0.17\textwidth}p{0.17\textwidth}p{0.17\textwidth}}
             \toprule
             \textbf{Aspek} & \textbf{RAID 0} & \textbf{RAID 1} & \textbf{RAID 5} & \textbf{RAID 6} \\
             \midrule
             Minimal disk & 2 & 2 & 3 & 4 \\
-            Redundansi & Tidak ada & Salinan penuh & Parity (1 disk) & Parity ganda (2 disk) \\
+            Redundansi & Tidak ada & Salinan penuh & Parity (1) & Parity ganda (2) \\
             Tahan rusak & 0 disk & 1 disk & 1 disk & 2 disk \\
             Kapasitas & 100\% & 50\% & $(N-1)/N$ & $(N-2)/N$ \\
             Baca & Sangat cepat & Cepat & Cepat & Cepat \\
@@ -850,6 +925,7 @@ CMD ["nginx", "-g", "daemon off;"]
             Biaya & Murah & Mahal & Sedang & Sedang \\
             \bottomrule
         \end{tabular}
+        }
     \end{center}
 
     \vspace{0.2cm}

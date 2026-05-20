@@ -52,7 +52,7 @@
     \begingroup
         \centering
         % ------------------------
-        \begin{beamercolorbox}[sep=8pt,left]{title}
+        \begin{beamercolorbox}[sep=5pt,left]{title}
         \usebeamerfont{title}\inserttitle\par
         \ifx\insertsubtitle\@empty
         \else
@@ -60,20 +60,20 @@
             {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}
         \fi   
         \end{beamercolorbox}
-        \vskip1em 
+        \vskip0.3em 
         \par
         % ------------------------
-        \begin{beamercolorbox}[sep=8pt,left]{author}
+        \begin{beamercolorbox}[sep=5pt,left]{author}
         \usebeamerfont{author}\insertauthor
         \end{beamercolorbox}
         \vskip-0.75em
         % ------------------------
         %\vskip2em
         \par
-        \begin{beamercolorbox}[sep=8pt,left]{institute}
+        \begin{beamercolorbox}[sep=5pt,left]{institute}
         \usebeamerfont{institute}\insertinstitute
         %\hspace*{0.5\linewidth}
-        \vskip2em\par
+        \vskip0.6em\par
         \usebeamerfont{date}\usebeamercolor[nyugray]{date}\insertdate
         \end{beamercolorbox}
         % ------------------------        
@@ -84,7 +84,7 @@
         % Logo on the title page
         \titlegraphic{
         \begin{tikzpicture}[overlay,remember picture]
-        \node[anchor=north west, outer sep=10pt] at (current page.north west)
+        \node[anchor=north west, outer sep=0pt] at (current page.north west)
         {   
             \hspace{4mm}
             \includegraphics[width=24mm]{logos/Logo.png}            
