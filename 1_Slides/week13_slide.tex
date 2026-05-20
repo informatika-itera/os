@@ -1,0 +1,925 @@
+\documentclass[t,aspectratio=169,xcolor=dvipsnames]{beamer}
+\usetheme{SimplePlusAIC}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{svg}
+\usepackage{tcolorbox}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows, positioning, fit, calc}
+\usepackage{makecell}
+\usepackage{listings}
+
+\newcommand*{\defeq}{\stackrel{\text{def}}{=}}
+\usepackage{setspace}
+\usepackage[T1]{fontenc}
+\usepackage{helvet}
+\usepackage{amsmath}
+\usepackage{ragged2e}
+\usepackage{gensymb}
+
+\usepackage[svgnames,table]{xcolor}
+\arrayrulecolor{black}
+\setlength{\arrayrulewidth}{0.20mm}
+\renewcommand{\arraystretch}{1.35}
+
+% Highlight istilah penting: bold + merah
+\newcommand{\tem}[1]{\textbf{\textcolor{red}{#1}}}
+
+% Konfigurasi listings (jika ada kode)
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    columns=fullflexible,
+    frame=none
+}
+
+\title[Pengayaan OS]{Pengayaan: Keamanan, Hak Akses, RAID \& Docker}
+\subtitle{Week 13: Hak Akses File, Virus dan Security, RAID, serta Container}
+\author[informatika-itera.github.io/os]{informatika-itera.github.io/os}
+\institute[ITERA]{Program Studi Teknik Informatika \\ Institut Teknologi Sumatera}
+\date{\textcolor{nyublue}{2026}}
+
+\AtBeginSection[]{
+    \begin{frame}[plain]
+        \vfill
+        \centering
+        {\usebeamerfont{title}\color{nyublue}\Huge \insertsectionhead\par}
+        \vfill
+    \end{frame}
+}
+
+\begin{document}
+
+% 1. Title frame
+\begin{frame}[shrink=10]
+    \titlepage
+\end{frame}
+
+% 2. Outline frame
+\begin{frame}
+    \frametitle{Outline}
+    \tableofcontents
+\end{frame}
+
+% 3. Capaian Pembelajaran
+\begin{frame}[shrink=5]
+    \frametitle{Capaian Pembelajaran}
+    \framesubtitle{Tujuan setelah pertemuan selesai}
+    \small
+    \begin{enumerate}
+        \item Memahami model hak akses file di Linux (rwx, owner/group/others).
+        \item Mengenal berbagai jenis malware dan bagaimana OS melindungi diri.
+        \item Memahami konsep RAID dan perbedaan level-levelnya.
+        \item Menjelaskan perbedaan container dan VM serta konsep dasar Docker.
+    \end{enumerate}
+    \vspace{0.5cm}
+    \begin{exampleblock}{Fokus Kelas Ini}
+        Kita fokus pada empat topik pengayaan: \tem{Hak Akses}, \tem{Keamanan OS}, \tem{RAID}, dan \tem{Docker}.
+    \end{exampleblock}
+\end{frame}
+
+%================================================
+% BAGIAN 1: HAK AKSES
+%================================================
+\section{Hak Akses di Linux}
+
+%--- Slide 1: Motivasi ---
+\begin{frame}
+    \frametitle{Mengapa Hak Akses Penting?}
+    \framesubtitle{Dari Week 12 kita tahu file disimpan -- tapi siapa yang boleh mengaksesnya?}
+
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{block}{Masalah}
+            \small
+            \begin{itemize}
+                \item Dalam sistem multi-user, banyak orang bisa pakai komputer yang sama.
+                \item File A milik Budi -- jangan sampai Siti bisa baca atau ubah.
+                \item OS harus bisa menjawab: \tem{who can do what to which file?}
+            \end{itemize}
+        \end{block}
+
+        \column{0.48\textwidth}
+        \begin{exampleblock}{Analogi: Kantor Sewaan}
+            \small
+            \begin{itemize}
+                \item Setiap karyawan punya ruangan sendiri (home directory).
+                \item Beberapa ruangan bersifat umum (shared folder).
+                \item Ada dokumen rahasia yang hanya boleh dibaca direktur.
+                \item Resepsionis cek kartu akses setiap kali masuk ruangan.
+            \end{itemize}
+        \end{exampleblock}
+    \end{columns}
+\end{frame}
+
+%--- Slide 2: Model Unix Permissions ---
+\begin{frame}[shrink=5]
+    \frametitle{Model Unix: Owner, Group, Others}
+    \framesubtitle{Tiga kategori pengguna + tiga jenis izin}
+
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        \begin{block}{Tiga Kategori}
+            \small
+            \begin{itemize}
+                \item \textbf{Owner (u)} -- Pemilik file (biasanya pembuat).
+                \item \textbf{Group (g)} -- Semua anggota grup yang sama.
+                \item \textbf{Others (o)} -- Semua pengguna lain di sistem.
+            \end{itemize}
+        \end{block}
+
+        \vspace{0.15cm}
+        \begin{block}{Tiga Jenis Izin}
+            \small
+            \begin{itemize}
+                \item \textbf{r (read)} -- Baca isi file / lihat daftar direktori.
+                \item \textbf{w (write)} -- Ubah file / buat-hapus file di direktori.
+                \item \textbf{x (execute)} -- Jalankan file sebagai program / masuk ke direktori.
+            \end{itemize}
+        \end{block}
+
+        \column{0.40\textwidth}
+        \begin{exampleblock}{Contoh: \texttt{ls -l}}
+            \small
+            \texttt{-rwxr-xr--} \\
+            \vspace{0.1cm}
+            \begin{tabular}{ll}
+                Owner: & rwx (baca-tulis-jalan) \\
+                Group: & r-x (baca-jalan) \\
+                Other: & r-- (baca saja) \\
+            \end{tabular}
+            \vspace{0.2cm}
+            \begin{itemize}
+                \item[$\to$] Owner bisa edit dan jalankan.
+                \item[$\to$] Orang lain cuma bisa baca.
+            \end{itemize}
+        \end{exampleblock}
+    \end{columns}
+\end{frame}
+
+%--- Slide 3: Numeric Notation ---
+\begin{frame}[shrink=5]
+    \frametitle{Numeric Notation (Mode Oktal)}
+    \framesubtitle{Cara cepat menulis permission dengan angka}
+
+    \begin{center}
+        \begin{tabular}{ccl}
+            \toprule
+            \textbf{Angka} & \textbf{Biner} & \textbf{Izin} \\
+            \midrule
+            7 & 111 & rwx \\
+            6 & 110 & rw- \\
+            5 & 101 & r-x \\
+            4 & 100 & r-- \\
+            0 & 000 & --- \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+
+    \vspace{0.3cm}
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{block}{Rumus}
+            \small
+            \texttt{chmod 754 file} = \\
+            Owner: 7 (rwx) \\
+            Group: 5 (r-x) \\
+            Other: 4 (r--)
+        \end{block}
+
+        \column{0.48\textwidth}
+        \begin{exampleblock}{Contoh Umum}
+            \small
+            \begin{itemize}
+                \item \texttt{755} -- script/program (rwxr-xr-x)
+                \item \texttt{644} -- dokumen biasa (rw-r--r--)
+                \item \texttt{600} -- file pribadi (rw-------)
+                \item \texttt{700} -- direktori pribadi (rwx------)
+            \end{itemize}
+        \end{exampleblock}
+    \end{columns}
+\end{frame}
+
+%--- Slide 4: Special Bits ---
+\begin{frame}
+    \frametitle{Special Bits: Setuid, Setgid, Sticky Bit}
+    \framesubtitle{Istimewa -- izin di luar rwx biasa}
+
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{block}{SUID (Set User ID) -- \texttt{chmod u+s}}
+            \small
+            \begin{itemize}
+                \item Program jalan dengan \textbf{privilege pemiliknya}, bukan yang menjalankan.
+                \item Contoh: \texttt{passwd} -- perlu akses root untuk ubah password, tapi user biasa bisa jalankan.
+                \item Tampil sebagai \texttt{s} di posisi x owner: \texttt{-rwsr-xr-x}.
+            \end{itemize}
+        \end{block}
+
+        \column{0.48\textwidth}
+        \begin{block}{SGID \& Sticky Bit}
+            \small
+            \textbf{SGID} (\texttt{chmod g+s}):
+            \begin{itemize}
+                \item File: jalan dengan privilege grup pemilik.
+                \item Direktori: file baru mewarisi grup direktori.
+            \end{itemize}
+            \vspace{0.1cm}
+            \textbf{Sticky Bit} (\texttt{chmod +t}):
+            \begin{itemize}
+                \item Di \texttt{/tmp}: semua bisa tulis, tapi cuma owner yang bisa hapus filenya.
+                \item Tampil sebagai \texttt{t}: \texttt{drwxrwxrwt}.
+            \end{itemize}
+        \end{block}
+    \end{columns}
+\end{frame}
+
+%--- Checkpoint 1 ---
+\begin{frame}
+    \frametitle{Checkpoint 1}
+    \framesubtitle{Hak Akses -- Cek pemahaman sebelum lanjut}
+    \small
+    \begin{enumerate}
+        \item Apa arti \texttt{chmod 600 rahasia.txt}?
+        \item Bedanya SUID dan SGID?
+        \item Kenapa \texttt{/tmp} pakai sticky bit?
+    \end{enumerate}
+    \vspace{0.3cm}
+    \begin{block}{Jawaban Singkat}
+        \begin{enumerate}
+            \item Owner bisa baca+tulis; group dan others tidak bisa apa-apa.
+            \item SUID = pakai privilege owner file; SGID = pakai privilege grup file.
+            \item Biar semua user bisa buat file sementara, tapi tidak bisa hapus file punya orang lain.
+        \end{enumerate}
+    \end{block}
+\end{frame}
+
+%================================================
+% BAGIAN 2: VIRUS & SECURITY
+%================================================
+\section{Virus \& Keamanan Sistem Operasi}
+
+%--- Slide 1: Ancaman ---
+\begin{frame}
+    \frametitle{Ancaman: Kenapa OS Perlu Aman?}
+    \framesubtitle{Dunia nyata penuh dengan malware}
+
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        \begin{alertblock}{Jenis Malware}
+            \small
+            \begin{itemize}
+                \item \textbf{Virus} -- Menempel di file lain dan menyebar saat file dijalankan.
+                \item \textbf{Worm} -- Menyebar sendiri melalui jaringan tanpa perlu file induk.
+                \item \textbf{Trojan} -- Menyamar sebagai program berguna, tapi diam-diam jahat.
+                \item \textbf{Ransomware} -- Mengenkripsi file korban, minta tebusan.
+                \item \textbf{Rootkit} -- Sembunyi di dalam OS, sembunyikan jejak serangan.
+            \end{itemize}
+        \end{alertblock}
+
+        \column{0.40\textwidth}
+        \begin{exampleblock}{Analogi}
+            \small
+            \begin{itemize}
+                \item Virus = ``flu'' komputer -- nempel di file.
+                \item Worm = pencuri yang masuk lewat celah pagar dan ngajak teman-temannya.
+                \item Trojan = ``kuda Troya'' -- kelihatan hadiah, isinya tentara.
+                \item Ransomware = penyekap yang ngunci rumahmu dan minta uang.
+            \end{itemize}
+        \end{exampleblock}
+    \end{columns}
+\end{frame}
+
+%--- Slide 2: Vektor Serangan ---
+\begin{frame}
+    \frametitle{Dari Mana Malware Masuk?}
+    \framesubtitle{Vektor serangan umum}
+
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        \small
+        \begin{itemize}
+            \item \textbf{Email phishing} -- Lampiran atau link berbahaya.
+            \item \textbf{Download software} -- Program bajakan atau dari sumber tidak resmi.
+            \item \textbf{USB drive} -- Autorun malware dari flash disk.
+            \item \textbf{Exploit jaringan} -- Celah di layanan yang terhubung ke internet.
+            \item \textbf{Drive-by download} -- Cuma buka website sudah kena.
+        \end{itemize}
+
+        \column{0.40\textwidth}
+        \begin{block}{Siapa Targetnya?}
+            \small
+            \begin{itemize}
+                \item Pengguna biasa: ransomware, phishing.
+                \item Server: DDoS, backdoor.
+                \item Infrastruktur kritis: serangan state-sponsored.
+                \item Ponsel: spyware, adware.
+            \end{itemize}
+        \end{block}
+    \end{columns}
+
+    \vspace{0.2cm}
+    \begin{exampleblock}{Pesan Penting}
+        \small
+        Sebagian besar serangan sukses karena \textbf{human error}, bukan karena OS lemah.
+    \end{exampleblock}
+\end{frame}
+
+%--- Slide 3: Mekanisme Proteksi OS ---
+\begin{frame}[shrink=5]
+    \frametitle{Mekanisme Proteksi oleh OS}
+    \framesubtitle{Bagaimana OS melindungi diri dari malware}
+
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{block}{1. User Mode vs Kernel Mode}
+            \small
+            \begin{itemize}
+                \item Aplikasi jalan di \tem{user mode} -- akses terbatas.
+                \item OS jalan di \tem{kernel mode} -- akses penuh ke hardware.
+                \item Malware di user mode tidak bisa sembarangan merusak kernel.
+            \end{itemize}
+        \end{block}
+
+        \vspace{0.1cm}
+        \begin{block}{2. Address Space Isolation}
+            \small
+            \begin{itemize}
+                \item Setiap proses punya address space sendiri.
+                \item Proses A tidak bisa baca memory Proses B.
+                \item Mencegah malware ``ngintip'' data program lain.
+            \end{itemize}
+        \end{block}
+
+        \column{0.48\textwidth}
+        \begin{block}{3. ASLR \& NX Bit}
+            \small
+            \textbf{ASLR (Address Space Layout Randomization)}:
+            \begin{itemize}
+                \item Alamat memory diacak setiap proses jalan.
+                \item Malware susah menebak lokasi kode yang akan dieksekusi.
+            \end{itemize}
+            \vspace{0.05cm}
+            \textbf{NX Bit (No-Execute)}:
+            \begin{itemize}
+                \item Menandai halaman memory tertentu sebagai \textit{non-executable}.
+                \item Data tidak bisa dijalankan sebagai kode.
+            \end{itemize}
+        \end{block}
+
+        \vspace{0.1cm}
+        \begin{block}{4. Mandatory Access Control}
+            \small
+            \textbf{SELinux / AppArmor}: kebijakan keamanan yang membatasi program bahkan oleh root.
+        \end{block}
+    \end{columns}
+\end{frame}
+
+%--- Slide 4: Studi Kasus ---
+\begin{frame}[shrink=5]
+    \frametitle{Studi Kasus: Bagaimana Virus Menginfeksi System File?}
+    \framesubtitle{Ilustrasi langkah demi langkah}
+
+    \small
+    \begin{enumerate}
+        \item Pengguna download program bajakan (Trojan).
+        \item Trojan jalan di \tem{user mode} -- tidak bisa langsung ubah kernel.
+        \item Trojan cari celah (\textit{privilege escalation}):
+        \begin{itemize}
+            \item Exploit kernel bug yang belum di-\textit{patch}.
+            \item Atau tipu user untuk masukkan password sudo.
+        \end{itemize}
+        \item Dapat akses root $\to$ overwrite file sistem (misal \texttt{/bin/ls}).
+        \item Setiap kali user ketik \texttt{ls}, virus ikut jalan.
+    \end{enumerate}
+
+    \vspace{0.2cm}
+    \begin{alertblock}{Pelajaran}
+        \small
+        \tem{Update OS} dan \tem{jangan download sembarangan} adalah pertahanan paling efektif!
+    \end{alertblock}
+\end{frame}
+
+%--- Checkpoint 2 ---
+\begin{frame}
+    \frametitle{Checkpoint 2}
+    \framesubtitle{Virus \& Security -- Cek pemahaman}
+    \small
+    \begin{enumerate}
+        \item Apa beda virus dan worm?
+        \item Bagaimana ASLR membantu mencegah serangan?
+        \item Kenapa user mode vs kernel mode penting untuk keamanan?
+    \end{enumerate}
+    \vspace{0.3cm}
+    \begin{block}{Jawaban Singkat}
+        \begin{enumerate}
+            \item Virus nempel di file induk; worm menyebar sendiri lewat jaringan.
+            \item ASLR mengacak alamat memory sehingga malware susah menebak lokasi target.
+            \item Karena malware di user mode tidak bisa langsung mengakses hardware atau memory kernel.
+        \end{enumerate}
+    \end{block}
+\end{frame}
+
+%================================================
+% BAGIAN 3: DOCKER
+%================================================
+\section{Docker \& Container}
+
+%--- Slide 1: Motivasi ---
+\begin{frame}
+    \frametitle{Masalah: ``It Works on My Machine''}
+    \framesubtitle{Mengapa lingkungan pengembangan tidak konsisten?}
+
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{alertblock}{Masalah Nyata}
+            \small
+            \begin{itemize}
+                \item Develop di Windows, deploy di Linux -- beda library.
+                \item Teman pakai Python 3.9, kamu 3.12 -- dependency conflicts.
+                \item Setup ulang environment butuh waktu berjam-jam.
+                \item Satu server harus jalan beberapa aplikasi dengan dependency berbeda.
+            \end{itemize}
+        \end{alertblock}
+
+        \column{0.48\textwidth}
+        \begin{exampleblock}{Analogi: Kontainer Pengiriman}
+            \small
+            \begin{itemize}
+                \item Bayangkan kontainer kapal barang.
+                \item Isi kontainer bisa apa saja -- elektronik, buah, pakaian.
+                \item Tapi kontainernya \textbf{standar}: ukuran sama, cara angkut sama.
+                \item Aplikasi + semua dependensinya ``dikemas'' dalam container.
+                \item Bisa jalan di mana saja tanpa setup ulang!
+            \end{itemize}
+        \end{exampleblock}
+    \end{columns}
+\end{frame}
+
+%--- Slide 2: Container vs VM ---
+\begin{frame}[shrink=15]
+    \frametitle{Container vs Virtual Machine}
+    \framesubtitle{Dua pendekatan isolasi yang berbeda}
+
+    \vspace{-0.3cm}
+    \begin{center}
+        \begin{tikzpicture}[scale=0.65, transform shape]
+            % VM side
+            \node[draw, fill=blue!15, rounded corners=3pt, minimum width=5cm, minimum height=0.5cm] (vm_host) at (-4, 2.5) {{\small Host OS}};
+            \node[draw, fill=orange!25, rounded corners=3pt, minimum width=4.5cm, minimum height=0.4cm] (vm_hyper) at (-4, 1.7) {{\small Hypervisor}};
+            \node[draw, fill=green!20, rounded corners=3pt, minimum width=2.5cm, minimum height=0.6cm] (vm1_os) at (-5.5, 0.5) {{\small Guest OS}};
+            \node[draw, fill=green!20, rounded corners=3pt, minimum width=2.5cm, minimum height=0.6cm] (vm2_os) at (-2.5, 0.5) {{\small Guest OS}};
+            \node[draw, fill=yellow!25, rounded corners=3pt, minimum width=1.8cm, minimum height=0.3cm] (vm1_app) at (-5.5, -0.3) {{\tiny App A}};
+            \node[draw, fill=yellow!25, rounded corners=3pt, minimum width=1.8cm, minimum height=0.3cm] (vm2_app) at (-2.5, -0.3) {{\tiny App B}};
+
+            \node[align=center] at (-4, -1.3) {{\bf VM}: Masing-masing\\punya OS sendiri.\\Berat, boot lama.};
+
+            % Container side
+            \node[draw, fill=blue!15, rounded corners=3pt, minimum width=5cm, minimum height=0.5cm] (cont_os) at (4, 2.5) {{\small Host OS}};
+            \node[draw, fill=red!15, rounded corners=3pt, minimum width=5cm, minimum height=0.4cm] (cont_engine) at (4, 1.7) {{\small Container Engine}};
+            \node[draw, fill=yellow!25, rounded corners=3pt, minimum width=2.5cm, minimum height=0.6cm] (c1) at (2.5, 0.5) {{\small Container 1}};
+            \node[draw, fill=yellow!25, rounded corners=3pt, minimum width=2.5cm, minimum height=0.6cm] (c2) at (5.5, 0.5) {{\small Container 2}};
+            \node[draw, fill=green!10, rounded corners=3pt, minimum width=2cm, minimum height=0.3cm] (c1_libs) at (2.5, -0.3) {{\tiny Lib v1}};
+            \node[draw, fill=green!10, rounded corners=3pt, minimum width=2cm, minimum height=0.3cm] (c2_libs) at (5.5, -0.3) {{\tiny Lib v2}};
+
+            \node[align=center] at (4, -1.3) {{\bf Container}: Pakai kernel\\host bersama. Ringan,\\start cepat.};
+
+            \node[align=center, font=\bf] at (-4, 3.2) {Virtual Machine};
+            \node[align=center, font=\bf] at (4, 3.2) {Container};
+        \end{tikzpicture}
+    \end{center}
+\end{frame}
+
+%--- Slide 3: Perbandingan ---
+\begin{frame}[shrink=5]
+    \frametitle{Perbandingan Langsung}
+
+    \begin{center}
+        \small
+        \begin{tabular}{p{0.23\textwidth}p{0.33\textwidth}p{0.33\textwidth}}
+            \toprule
+            \textbf{Aspek} & \textbf{Virtual Machine} & \textbf{Container} \\
+            \midrule
+            Boot time & Menit & Detik \\
+            Ukuran & GB (OS penuh) & MB (aplikasi + lib) \\
+            Isolasi & Kuat (hardware level) & Level proses (namespace) \\
+            Resource & Boros (setiap VM punya OS) & Hemat (pakai kernel host) \\
+            Portability & Image besar, pindah lambat & Image kecil, mudah deploy \\
+            Use case & Butuh OS berbeda, multi-tenant & Microservices, CI/CD, dev env \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+
+    \vspace{0.2cm}
+    \begin{exampleblock}{Kapan Pilih Mana?}
+        \small
+        \begin{itemize}
+            \item Butuh jalan aplikasi Linux di Windows server? $\to$ VM.
+            \item Butuh deploy 20 microservices di satu server? $\to$ Container.
+        \end{itemize}
+    \end{exampleblock}
+\end{frame}
+
+%--- Slide 4: Docker Basics ---
+\begin{frame}[fragile, shrink=10]
+    \frametitle{Docker Basics: Image, Container, Dockerfile}
+    \framesubtitle{Tiga konsep inti Docker}
+
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{block}{Image}
+            \small
+            \begin{itemize}
+                \item Template read-only yang berisi aplikasi + semua dependensinya.
+                \item Bisa di-download dari registry (Docker Hub).
+                \item Seperti ``CD installer'' -- tidak bisa diubah.
+            \end{itemize}
+        \end{block}
+
+        \vspace{0.1cm}
+        \begin{block}{Container}
+            \small
+            \begin{itemize}
+                \item Instance jalan dari sebuah image.
+                \item Bisa dibuat, distart, distop, dihapus.
+                \item Seperti ``komputer virtual'' mini yang jalan di atas host.
+            \end{itemize}
+        \end{block}
+
+        \column{0.48\textwidth}
+        \begin{block}{Dockerfile}
+            \small
+            \begin{itemize}
+                \item Resep untuk membangun image.
+                \item Berisi perintah: ambil base image, copy file, install, dsb.
+            \end{itemize}
+        \end{block}
+
+        \vspace{0.05cm}
+        \begin{exampleblock}{Command Penting}
+            \small
+            \texttt{docker pull ubuntu} \\
+            \texttt{docker run -it ubuntu bash} \\
+            \texttt{docker build -t myapp .} \\
+            \texttt{docker ps} \\
+            \texttt{docker stop <id>}
+        \end{exampleblock}
+    \end{columns}
+\end{frame}
+
+%--- Slide 5: Contoh Dockerfile ---
+\begin{frame}[fragile, shrink=5]
+    \frametitle{Contoh Dockerfile Sederhana}
+    \framesubtitle{Web server statis dengan Nginx}
+
+    \tiny
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        \begin{lstlisting}[basicstyle=\ttfamily\tiny, breaklines=true]
+# Ambil base image resmi Nginx
+FROM nginx:alpine
+
+# Copy file HTML ke direktori default Nginx
+COPY index.html /usr/share/nginx/html/
+
+# Ekspos port 80
+EXPOSE 80
+
+# Perintah jalan saat container start
+CMD ["nginx", "-g", "daemon off;"]
+        \end{lstlisting}
+
+        \column{0.40\textwidth}
+        \begin{block}{Penjelasan}
+            \tiny
+            \begin{itemize}
+                \item \texttt{FROM} -- base image yang sudah ada OS + Nginx.
+                \item \texttt{COPY} -- masukkan file kita ke dalam image.
+                \item \texttt{EXPOSE} -- kasih tahu container ini buka port 80.
+                \item \texttt{CMD} -- perintah yang jalan saat container start.
+            \end{itemize}
+        \end{block}
+    \end{columns}
+
+    \vspace{0.15cm}
+    \begin{exampleblock}{Build \& Run}
+        \small
+        \texttt{\$ docker build -t my-nginx .} \hfill build image \\
+        \texttt{\$ docker run -d -p 8080:80 my-nginx} \hfill jalan container
+    \end{exampleblock}
+\end{frame}
+
+%--- Slide 6: Isolasi Container ---
+\begin{frame}[shrink=10]
+    \frametitle{Bagaimana Container Isolasi?}
+    \framesubtitle{Namespaces dan Cgroups -- ``Dua Pilar'' Docker}
+
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{block}{Namespaces (Pemisahan)}
+            \small
+            Setiap container punya ``tampilan'' sendiri terhadap sistem:
+            \begin{itemize}
+                \item \texttt{PID ns} -- hanya lihat proses di dalam container.
+                \item \texttt{NET ns} -- network interface sendiri, IP sendiri.
+                \item \texttt{MNT ns} -- file system root sendiri.
+                \item \texttt{UTS ns} -- hostname sendiri.
+                \item \texttt{USER ns} -- user ID sendiri (bisa root di dalam).
+            \end{itemize}
+        \end{block}
+
+        \column{0.48\textwidth}
+        \begin{block}{Cgroups (Batas Sumber Daya)}
+            \small
+            \begin{itemize}
+                \item Membatasi CPU, memory, disk I/O per container.
+                \item Satu container tidak bisa ``makan'' semua resource.
+                \item Contoh: \\
+                \texttt{docker run --memory=256m --cpus=1.5 ...}
+            \end{itemize}
+        \end{block}
+    \end{columns}
+
+    \vspace{0.2cm}
+    \begin{exampleblock}{Intuisi: Container = Proses + ``Kacamata Kuda''}
+        \small
+        Container adalah proses biasa, tapi OS memakai namespace untuk membuatnya ``lihat'' dunia yang terisolasi -- seolah-olah dia sendiri di komputer itu.
+    \end{exampleblock}
+\end{frame}
+
+%--- Checkpoint 3 ---
+\begin{frame}
+    \frametitle{Checkpoint 3}
+    \framesubtitle{Docker -- Cek pemahaman}
+    \small
+    \begin{enumerate}
+        \item Apa perbedaan image dan container?
+        \item Kenapa container lebih ringan dari VM?
+        \item Dua mekanisme OS apa yang membuat container bisa isolasi?
+    \end{enumerate}
+    \vspace{0.3cm}
+    \begin{block}{Jawaban Singkat}
+        \begin{enumerate}
+            \item Image = template read-only; Container = instance jalan dari image.
+            \item Container pakai kernel host bersama, tidak perlu Guest OS sendiri.
+            \item Namespaces (pemisahan tampilan) dan Cgroups (pembatasan resource).
+        \end{enumerate}
+    \end{block}
+\end{frame}
+
+%================================================
+% BAGIAN 4: RAID
+%================================================
+\section{RAID \& Storage Redundancy}
+
+%--- Slide 1: Motivasi ---
+\begin{frame}
+    \frametitle{Masalah: Satu Disk Rusak, Data Hilang}
+    \framesubtitle{Kenapa kita butuh redundansi penyimpanan?}
+
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{alertblock}{Masalah Nyata}
+            \small
+            \begin{itemize}
+                \item Hard disk memiliki \textit{MTBF} (Mean Time Before Failure) -- rata-rata 3--5 tahun.
+                \item Dalam data center dengan 1.000 disk, satu disk rusak hampir setiap minggu.
+                \item Satu disk rusak $\to$ semua data di disk itu lenyap.
+                \item Solusi naif: backup manual -- lambat dan tidak real-time.
+            \end{itemize}
+        \end{alertblock}
+
+        \column{0.48\textwidth}
+        \begin{exampleblock}{Analogi: Dua Motor}
+            \small
+            \begin{itemize}
+                \item Bayangkan kita pergi naik motor. Ban motor bisa bocor kapan saja.
+                \item Tanpa cadangan: kita berhenti total dan harus panggil tukang tambal.
+                \item Dengan ban cadangan: kita ganti dan lanjut perjalanan.
+                \item \textbf{RAID} adalah ``ban cadangan'' untuk hard disk -- jika satu rusak, yang lain langsung menggantikan.
+            \end{itemize}
+        \end{exampleblock}
+    \end{columns}
+\end{frame}
+
+%--- Slide 2: RAID 0 ---
+\begin{frame}[shrink=10]
+    \frametitle{RAID 0: Striping}
+    \framesubtitle{Kecepatan tanpa redundansi}
+
+    \begin{columns}[T]
+        \column{0.50\textwidth}
+        \begin{block}{Cara Kerja}
+            \small
+            \begin{itemize}
+                \item Data dipecah (\textit{striped}) menjadi potongan-potongan kecil.
+                \item Potongan disebar ke beberapa disk secara bergantian.
+                \item Membaca/menulis bisa paralel $\to$ lebih cepat.
+                \item Dibutuhkan minimal 2 disk.
+            \end{itemize}
+        \end{block}
+
+        \vspace{0.15cm}
+        \begin{exampleblock}{Ilustrasi: File ``BUKU''}
+            \small
+            \texttt{Disk 1: B K U} \\
+            \texttt{Disk 2: U U $\emptyset$} \\
+            \texttt{Pembacaan paralel: lebih cepat!}
+        \end{exampleblock}
+
+        \column{0.45\textwidth}
+        \begin{alertblock}{Risiko}
+            \small
+            \begin{itemize}
+                \item \textbf{Tidak ada redundansi!}
+                \item Jika satu disk rusak $\to$ \tem{semua data hilang}.
+                \item Probabilitas failure = $N \times P$ (lebih besar dari disk tunggal).
+            \end{itemize}
+        \end{alertblock}
+
+        \vspace{0.15cm}
+        \begin{block}{Kapan Dipakai?}
+            \small
+            \begin{itemize}
+                \item Video editing (butuh throughput tinggi).
+                \item Data sementara yang bisa di-recreate.
+            \end{itemize}
+        \end{block}
+    \end{columns}
+\end{frame}
+
+%--- Slide 3: RAID 1 ---
+\begin{frame}[shrink=10]
+    \frametitle{RAID 1: Mirroring}
+    \framesubtitle{Aman tapi boros}
+
+    \begin{columns}[T]
+        \column{0.50\textwidth}
+        \begin{block}{Cara Kerja}
+            \small
+            \begin{itemize}
+                \item Setiap data ditulis ke \textbf{dua disk} secara identik (\textit{mirror}).
+                \item Jika Disk 1 rusak, Disk 2 masih punya salinan lengkap.
+                \item Baca bisa paralel (lebih cepat), tulis tetap ke dua disk.
+                \item Dibutuhkan minimal 2 disk.
+            \end{itemize}
+        \end{block}
+
+        \column{0.45\textwidth}
+        \begin{exampleblock}{Ilustrasi: File ``BUKU''}
+            \small
+            \texttt{Disk 1: B U K U} \\
+            \texttt{Disk 2: B U K U} \\
+            \texttt{Identik!}
+        \end{exampleblock}
+
+        \vspace{0.15cm}
+        \begin{alertblock}{Kekurangan}
+            \small
+            \begin{itemize}
+                \item \textbf{Kapasitas terpakai hanya 50\%}.
+                \item 2 TB (2 disk $\times$ 1 TB) = hanya 1 TB yang terpakai.
+            \end{itemize}
+        \end{alertblock}
+
+        \vspace{0.15cm}
+        \begin{block}{Kapan Dipakai?}
+            \small
+            \begin{itemize}
+                \item Sistem kritis (OS, database log).
+                \item Data yang tidak boleh hilang.
+            \end{itemize}
+        \end{block}
+    \end{columns}
+\end{frame}
+
+%--- Slide 4: RAID 5 & 6 ---
+\begin{frame}[shrink=5]
+    \frametitle{RAID 5 \& 6: Parity}
+    \framesubtitle{Keseimbangan antara performa, kapasitas, dan keamanan}
+
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{block}{RAID 5}
+            \small
+            \begin{itemize}
+                \item Data + \textit{parity} (informasi pemulihan) disebar ke semua disk.
+                \item Parity memakan kapasitas \textbf{1 disk}.
+                \item 3 disk (3 TB) $\to$ 2 TB data + 1 TB parity.
+                \item Tahan terhadap \textbf{1 disk} rusak.
+                \item Write lebih lambat karena harus hitung parity.
+            \end{itemize}
+        \end{block}
+
+        \column{0.48\textwidth}
+        \begin{block}{RAID 6}
+            \small
+            \begin{itemize}
+                \item Dua parity (P + Q) -- redundansi ganda.
+                \item Parity memakan kapasitas \textbf{2 disk}.
+                \item Tahan terhadap \textbf{2 disk} rusak \textbf{bersamaan}.
+                \item Cocok untuk disk besar dengan rebuild time lama.
+            \end{itemize}
+        \end{block}
+    \end{columns}
+
+    \vspace{0.2cm}
+    \begin{exampleblock}{Analogi: Permainan Teka-Teki}
+        \small
+        Parity seperti teka-teki silang: jika satu kotak hilang, kita masih bisa menebak isinya dari petunjuk baris dan kolom yang lain. RAID 6 memberi dua petunjuk, jadi dua kotak hilang pun masih tertebak.
+    \end{exampleblock}
+\end{frame}
+
+%--- Slide 5: Perbandingan ---
+\begin{frame}[shrink=5]
+    \frametitle{Perbandingan RAID Levels}
+
+    \begin{center}
+        \small
+        \begin{tabular}{p{0.20\textwidth}p{0.17\textwidth}p{0.17\textwidth}p{0.17\textwidth}p{0.17\textwidth}}
+            \toprule
+            \textbf{Aspek} & \textbf{RAID 0} & \textbf{RAID 1} & \textbf{RAID 5} & \textbf{RAID 6} \\
+            \midrule
+            Minimal disk & 2 & 2 & 3 & 4 \\
+            Redundansi & Tidak ada & Salinan penuh & Parity (1 disk) & Parity ganda (2 disk) \\
+            Tahan rusak & 0 disk & 1 disk & 1 disk & 2 disk \\
+            Kapasitas & 100\% & 50\% & $(N-1)/N$ & $(N-2)/N$ \\
+            Baca & Sangat cepat & Cepat & Cepat & Cepat \\
+            Tulis & Sangat cepat & Sedang & Lambat & Paling lambat \\
+            Biaya & Murah & Mahal & Sedang & Sedang \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+
+    \vspace{0.2cm}
+    \begin{block}{Tips Memilih}
+        \small
+        \begin{itemize}
+            \item Prioritaskan kecepatan? $\to$ RAID 0 (tapi backup terpisah wajib!)
+            \item Prioritaskan keamanan? $\to$ RAID 1 (data kecil) atau RAID 5/6 (data besar)
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+%--- Checkpoint 4 ---
+\begin{frame}
+    \frametitle{Checkpoint 4}
+    \framesubtitle{RAID -- Cek pemahaman}
+    \small
+    \begin{enumerate}
+        \item Bedanya RAID 0 dan RAID 1?
+        \item Kenapa RAID 5 lebih efisien kapasitasnya daripada RAID 1?
+        \item Kapan kita butuh RAID 6 daripada RAID 5?
+    \end{enumerate}
+    \vspace{0.3cm}
+    \begin{block}{Jawaban Singkat}
+        \begin{enumerate}
+            \item RAID 0 = striping (cepat, tanpa redundansi); RAID 1 = mirroring (aman, kapasitas setengah).
+            \item RAID 5 hanya kehilangan kapasitas 1 disk untuk parity, bukan setengah dari total.
+            \item Saat pakai disk besar (recovery lama) -- dua disk bisa rusak dalam waktu pemulihan.
+        \end{enumerate}
+    \end{block}
+\end{frame}
+
+%================================================
+% PENUTUP
+%================================================
+\section*{Penutup}
+
+\begin{frame}[shrink=5]
+    \frametitle{Rangkuman Hari Ini}
+    \small
+    \begin{enumerate}
+        \item \textbf{Hak Akses}: Unix membagi izin r/w/x untuk Owner, Group, Others. Ditambah special bits SUID/SGID/Sticky.
+        \item \textbf{Keamanan OS}: Malware (virus, worm, trojan, ransomware) dan mekanisme proteksi OS (user/kernel mode, ASLR, NX bit, isolasi address space).
+        \item \textbf{Docker}: Container sebagai OS-level virtualization yang ringan. Namespace dan Cgroups sebagai kunci isolasi.
+        \item \textbf{RAID}: Redundansi penyimpanan lewat striping (RAID 0), mirroring (RAID 1), atau parity (RAID 5/6).
+    \end{enumerate}
+
+    \vspace{0.2cm}
+    \begin{exampleblock}{Pesan Penutup}
+        \small
+        Materi pekan depan: \textbf{Quiz}! Persiapkan diri dari Week 1--13.
+    \end{exampleblock}
+\end{frame}
+
+%--- Penutup ---
+\begin{frame}
+    \frametitle{Terima Kasih}
+    \begin{center}
+        \Huge \textbf{Ada Pertanyaan?}
+
+        \vspace{0.8cm}
+        \normalsize
+        Selamat belajar dan tetap aman di dunia maya!
+
+        \vspace{0.8cm}
+        \small
+        \textit{``The only secure system is the one that is powered off, sheathed in a block of concrete and sealed in a lead-lined room with armed guards.''} \\
+        \vspace{0.1cm}
+        --- Gene Spafford
+    \end{center}
+\end{frame}
+
+\end{document}
